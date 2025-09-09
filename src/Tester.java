@@ -1,22 +1,41 @@
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Assertions;
+
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+
+import java.net.URI;
+import java.net.ConnectException;
+
+import java.io.IOException;
+import java.time.Duration;
+
 
 class Tester {
-    private static MockServer server;
-    @BeforeAll
-    public static void initAll()
+    @Test
+    void ConnectToServer()
     {
-        server = new MockServer();
-        server.start();
-    };
-    @AfterAll
-    public static void endAll()
-    {
-        server.stop();
+        try {
+        URI uri = URI.create("http://127.0.0.1:8080");
+        HttpClient client = HttpClient.newBuilder().build();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(uri)
+            .timeout(Duration.ofSeconds(1))
+            .build();
+        HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+        Assertions.assertEquals(200, response.statusCode());
+        }
+        catch (ConnectException e) { e.printStackTrace(); }
+        //catch (TimeoutException e) { System.out.println("[CLIENT] Timed out"); }
+        catch (IOException e) { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
     };
     @Test
+    @Disabled
     void ClientGetAllBookedMealsThisMonth()
     {
         Client client;

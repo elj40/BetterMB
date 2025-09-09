@@ -9,10 +9,16 @@ import java.net.URI;
 import java.io.IOException;
 import java.net.ConnectException;
 
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+
+import com.google.gson.Gson;
+
 class Client
 {
     HttpClient httpClient;
-    String     linkPrefix = "https://127.0.0.1:8080";
+    Gson gson = new Gson();
+    String     linkPrefix = "http://127.0.0.1:8080";
     String     jsessionid = "abcdefg";
     String     NSC        = "1234567";
     Client()
@@ -41,27 +47,49 @@ class Client
     };
     public boolean book(Meal meal)
     {
-        String mealJson = "mealJson";
+        String mealJson = gson.toJson(meal);
         String linkSuffix = "/new-booking";
-        linkSuffix = "/";
-        //try
-        //{
+        try
+        {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(linkPrefix + linkSuffix))
                 .POST(BodyPublishers.ofString(mealJson))
+                .timeout(Duration.ofSeconds(1))
                 .build();
 
             System.out.println("[CLIENT] Sending " + linkSuffix+": " + mealJson);
-            httpClient.sendAsync(request, BodyHandlers.discarding());
-        //}
-        //catch (ConnectException e) { e.printStackTrace(); }
-        //catch (IOException e) { e.printStackTrace(); }
-        //catch (InterruptedException e) { e.printStackTrace(); }
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+            System.out.println("[CLIENT] Status code: " + response.statusCode());
+            System.out.println("[CLIENT] Body       : " + response.body());
+
+            if  (response.body().equals("no")) return false;
+        }
+        catch (ConnectException e) { e.printStackTrace(); }
+        //catch (TimeoutException e) { System.out.println("[CLIENT] Timed out"); }
+        catch (IOException e) { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
         return true;
     };
     // Flushes the test server
     // DO NOT USE OUTSIDE OF TESTING!
     public void _flushServer()
     {
+        String linkSuffix = "/flush";
+        try
+        {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(linkPrefix + linkSuffix))
+                .timeout(Duration.ofSeconds(1))
+                .build();
+
+            System.out.println("[CLIENT] Sending " + linkSuffix);
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+            System.out.println("[CLIENT] Status code: " + response.statusCode());
+            System.out.println("[CLIENT] Body       : " + response.body());
+        }
+        catch (ConnectException e) { e.printStackTrace(); }
+        //catch (TimeoutException e) { System.out.println("[CLIENT] Timed out"); }
+        catch (IOException e) { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
     };
 };
