@@ -13,11 +13,13 @@ import java.net.ConnectException;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
+import com.google.gson.Gson;
 
 class Tester {
     @Test
-    void ConnectToServer()
+    void ClientConnectToServer()
     {
         try {
         URI uri = URI.create("http://127.0.0.1:8080");
@@ -35,48 +37,42 @@ class Tester {
         catch (InterruptedException e) { e.printStackTrace(); }
     };
     @Test
-    @Disabled
-    void ClientGetAllBookedMealsThisMonth()
+    void ClientGetAvailableMealSlots()
     {
-        Client client;
-        String date;
-        Meal[] meals;
+        String base_url = "http://127.0.0.1:8080";
+        Client client = new Client(base_url);
+        Gson gson = new Gson();
+        List<MealSlot> mealSlots;
+        String date = "2025-01-01";
+        Meal meal;
 
-        client = new Client();
-        date = "";
+        client.flushServer();
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(3, mealSlots.size());
 
-        meals = client.getAllBookedMeals(date);
-        Assertions.assertNull(meals);
+        meal = new Meal(date, MealSlot.BREAKFAST);
+        client.book(meal);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(2, mealSlots.size());
 
-        date = "";
-        meals = client.getAllBookedMeals(date);
-        Assertions.assertNull(meals);
+        meal = new Meal(date, MealSlot.LUNCH);
+        client.book(meal);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(1, mealSlots.size());
 
-        date = "2025-01-31";
-        Meal meal0 = new Meal("2025-01-01");
-        Meal meal1 = new Meal("2025-01-02");
-        client.book(meal0);
-        client.book(meal1);
-        meals = client.getAllBookedMeals(date);
-        Assertions.assertEquals(meals.length, 2);
-        Assertions.assertEquals(meals[0], meal0);
+        meal = new Meal(date, MealSlot.DINNER);
+        client.book(meal);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(0, mealSlots.size());
     };
     @Test
-    void ClientBookMeal()
-    {
-        // How do i test this without the server?
-        Client client;
-        Meal meal;
-        boolean result;
-
-        client = new Client();
-        client._flushServer();
-
-        meal = new Meal("2025-01-01");
-        result = client.book(meal);
-        Assertions.assertTrue(result);
-
-        result = client.book(meal);
-        Assertions.assertFalse(result);
-    };
+    void ClientGetAvailableMealFacilities() { Assertions.assertTrue(false); };
+    @Test
+    void ClientGetAvailableMeals() { Assertions.assertTrue(false); };
+    @Test
+    void ClientBookMeal() { Assertions.assertTrue(false); };
+    @Test
+    void ClientGetMealsBookedThisMonth() { Assertions.assertTrue(false); };
+    @Test
+    void ClientCancelMeal() { Assertions.assertTrue(false); };
 };

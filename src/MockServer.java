@@ -12,6 +12,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 import com.google.gson.Gson;
 
@@ -41,10 +42,18 @@ class EchoHandler implements HttpHandler
         } catch (IOException e) { e.printStackTrace(); }
     }
 };
+class Day
+{
+    public Meal breakfast;
+    public Meal lunch;
+    public Meal dinner;
+};
 class MockServer {
     static HttpServer server;
     static Gson       gson   = new Gson();
-    static List<Meal> meals  = new ArrayList<Meal>();
+    static HashMap<String, Day> bookings = new HashMap<String, Day>();
+
+    static String getMealSlotsPath = "/student-meal-booking/spring/api/get-meal-slots-dto/";
     public static void main(String[] args)
     {
         start();
@@ -60,7 +69,7 @@ class MockServer {
             server.bind(address, 0);
 
             server.createContext("/",            new EchoHandler());
-            server.createContext("/new-booking", new BookingHandler());
+            server.createContext(getMealSlotsPath, new GetMealSlotsHandler());
             server.createContext("/flush",       new FlushHandler());
 
             server.start();
@@ -72,6 +81,62 @@ class MockServer {
         System.out.println("[SERVER] Stopping");
         server.stop(0);
     };
+    static class GetMealSlotsHandler implements HttpHandler
+    {
+        @Override
+        public void handle(HttpExchange exchange)
+        {
+            try
+            {
+                URI requestURI = exchange.getRequestURI();
+                String requestPath = requestURI.getPath();
+                System.out.println("[GetMealSlotsHandler] " + requestPath);
+                if (!isValidPath(requestPath))
+                {
+                    exchange.sendResponseHeaders(400, 0);
+                    OutputStream out = exchange.getResponseBody();
+                    out.write("[GetMealSlotsHandler] Bad request:\n".getBytes());
+                    out.write(("Expected: " + getMealSlotsPath + "yyyy-mm-dd/en\n").getBytes());
+                    out.write(("Got     : " + requestPath).getBytes());
+                    out.close();
+                    return;
+                } else
+                {
+                    int start = getMealSlotsPath.length()-1;
+                    int end   = start + "yyyy-mm-dd".length();
+                    String date = requestPath.substring(start, end);
+
+                    Day day = bookings.get(date);
+                    boolean noBooking = day == null;
+                    StringBuilder responseSB = new StringBuilder();
+                    responseSB.append("[ ");
+                    responseSB.append("{\"code\":\"0\",\"description\":\"Select\"}");
+                    if (noBooking || day.breakfast == null)
+                        responseSB.append(", {\"code\":\"B\",\"description\":\"Breakfast\"}");
+                    if (noBooking || day.lunch == null)
+                        responseSB.append(", {\"code\":\"L\",\"description\":\"Lunch\"}");
+                    if (noBooking || day.dinner == null)
+                        responseSB.append(", {\"code\":\"D\",\"description\":\"Dinner\"}");
+                    responseSB.append(" ]");
+
+                    exchange.sendResponseHeaders(200, 0);
+                    OutputStream out = exchange.getResponseBody();
+                    out.write(responseSB.toString().getBytes());
+                    out.close();
+                }
+            } catch (Exception e) { e.printStackTrace(); };
+        };
+        private boolean isValidPath(String path)
+        {
+            if (!path.startsWith(getMealSlotsPath)) return false;
+            if (!path.endsWith("/en")) return false;
+            int dateLength = 4 + 1 + 2 + 1 + 2;
+            int langLength = 3;
+            if (path.length() != (getMealSlotsPath.length() + dateLength + langLength))
+                return false;
+            return true;
+        };
+    }
     static class BookingHandler implements HttpHandler
     {
         @Override
@@ -81,34 +146,14 @@ class MockServer {
             {
                 if(!"POST".equals(exchange.getRequestMethod()))
                 {
-                    System.out.println("[SERVER][BookingHandler] Non-POST method made in booking");
-                    exchange.sendResponseHeaders(405, -1);
+                    String message = "[BookingHandler] Non-POST method made in booking";
+                    System.out.println(message);
+                    exchange.sendResponseHeaders(405, message.length());
+                    OutputStream out = exchange.getResponseBody();
+                    out.write(message.getBytes());
+                    out.close();
                     return;
                 };
-                InputStream inputStream = exchange.getRequestBody();
-                String requestBody = new String(inputStream.readAllBytes());
-                System.out.println("[SERVER] BookingHandler received: " + requestBody);
-
-                Meal requestMeal = gson.fromJson(requestBody, Meal.class);
-                boolean mealAlreadyBooked = false;
-                for (Meal meal: meals)
-                {
-                    if (!meal.date.equals(requestMeal.date)) continue;
-                    mealAlreadyBooked = true;
-                    break;
-                };
-                String responseString;
-                if (mealAlreadyBooked) responseString = "no";
-                else
-                {
-                    responseString = "yes";
-                    meals.add(requestMeal);
-                }
-
-                exchange.sendResponseHeaders(200, responseString.length());
-                OutputStream responseBody = exchange.getResponseBody();
-                responseBody.write(responseString.getBytes());
-                responseBody.close();
             } catch (Exception e) { e.printStackTrace(); };
         };
     };
@@ -119,16 +164,9 @@ class MockServer {
         {
             try
             {
-                StringBuilder sb = new StringBuilder();
-
-                sb.append("Number of meals before: ");
-                sb.append(meals.size()); sb.append("\n");
-
-                meals.clear();
-                sb.append("Number of meals after: ");
-                sb.append(meals.size()); sb.append("\n");
-
-                String responseString = sb.toString();
+                bookings.clear();
+                String responseString = "[FlushHandler] Server bookings cleared";
+                System.out.println(responseString);
 
                 exchange.sendResponseHeaders(200, responseString.length());
                 OutputStream responseBody = exchange.getResponseBody();
