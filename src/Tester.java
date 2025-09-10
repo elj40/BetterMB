@@ -44,24 +44,26 @@ class Tester {
         Gson gson = new Gson();
         List<MealSlot> mealSlots;
         String date = "2025-01-01";
-        Meal meal;
+        MealBookingOptions mbo;
+        mbo = new MealBookingOptions();
+        mbo.mealDate = date;
 
         client.flushServer();
         mealSlots = client.getAvailableMealSlots(date);
         Assertions.assertEquals(3, mealSlots.size());
 
-        meal = new Meal(date, MealSlot.BREAKFAST);
-        client.book(meal);
+        mbo.mealSlot = MealSlot.BREAKFAST;
+        client.book(mbo);
         mealSlots = client.getAvailableMealSlots(date);
         Assertions.assertEquals(2, mealSlots.size());
 
-        meal = new Meal(date, MealSlot.LUNCH);
-        client.book(meal);
+        mbo.mealSlot = MealSlot.LUNCH;
+        client.book(mbo);
         mealSlots = client.getAvailableMealSlots(date);
         Assertions.assertEquals(1, mealSlots.size());
 
-        meal = new Meal(date, MealSlot.DINNER);
-        client.book(meal);
+        mbo.mealSlot = MealSlot.DINNER;
+        client.book(mbo);
         mealSlots = client.getAvailableMealSlots(date);
         Assertions.assertEquals(0, mealSlots.size());
     };

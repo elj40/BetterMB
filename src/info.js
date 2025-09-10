@@ -65,12 +65,13 @@ response_body  =
 
 // Submit
 request_method = POST
-request_link   = /student-meal-booking/spring/api/store-meal-booking/en
+request_link   = /student-jeal-booking/spring/api/store-meal-booking/en
 request_body   = {"mealDate":"2025-09-17","mealSlot":"B","mealFacility":"22","mealOption":"25159","mealSession":39,"excludeWeekends":true}
+{"mealDate":"2025-09-15","mealSlot":"B","mealFacility":"22","mealOption":"25009","mealSession":39,"advanceBookingDays":"4","excludeWeekends":true}
 response_body  = [
     {"bookingDate":"2025-09-17","bookingMessage":"Booking successful"}
 ]
-
+[{"bookingDate":"2025-09-15","bookingMessage":"Booking successful"},{"bookingDate":"2025-09-16","bookingMessage":"Booking successful"},{"bookingDate":"2025-09-17","bookingMessage":"Reservation already exists"},{"bookingDate":"2025-09-18","bookingMessage":"Booking successful"},{"bookingDate":"2025-09-19","bookingMessage":"Booking successful"}]
 // Get meals booked this month
 request_method = GET
 request_link   = /student-meal-booking/spring/api/get-meal-bookings-dto/en/2025-08-31

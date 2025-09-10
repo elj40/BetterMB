@@ -1,48 +1,229 @@
+import org.junit.jupiter.api.Assertions;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Scanner;
+
+import com.google.gson.Gson;
+//Cookie: NSC_MC_WT_xfc-bqqt.tvo.bd.ab_IUUQ=ffffffff91e0096a45525d5f4f58455e445a4a422d6c; jsessionid=CHw1X8Fgf4CPz1naOPPjRWCZ-ofXwFQSGXbXw5Rvm6yZANBvOKCF!-517264473
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.net.URI;
 class Main
 {
-    String sun_mb_store_booking_link = "127.0.0.0:8080";
+    //static String base_url = "http://127.0.0.1:8080";
+    static String base_url = "https://web-apps.sun.ac.za";
+    //static String cookies = "urmom;sixseven";
+    static String cookies = "NSC_MC_WT_xfc-bqqt.tvo.bd.ab_IUUQ=ffffffff91e0096a45525d5f4f58455e445a4a422d6c; jsessionid=CHw1X8Fgf4CPz1naOPPjRWCZ-ofXwFQSGXbXw5Rvm6yZANBvOKCF!-517264473";
+    static Gson gson = new Gson();
     public static void main(String[] args)
     {
-        System.out.println("Hello World!");
+        int choice;
+        String date = "2025-09-15";
+        Scanner scanner = new Scanner(System.in);
+        Client client = new Client(base_url, cookies);
+        MealBookingOptions mbo = new MealBookingOptions();
 
-        String mealDate = "2025-09-08";
-        String mealSlot = "L";
-        int    mealFacility = 22;
-        int    mealOption = 24684;
-        int    mealSession = 60;
-        int    advanceBookingDays = 2;
-        boolean excludeWeekends = true;
-        result = book_meal(mealDate, mealSlot, mealFacility, mealOption, mealSession, advanceBookingDays, excludeWeekends);
+        mbo.mealDate = date;
+
+        List<MealSlot> slots = client.getAvailableMealSlots(mbo.mealDate);
+        for (int i = 0; i < slots.size(); i++)
+        {
+            System.out.print(i);
+            System.out.print(". ");
+            System.out.println(gson.toJson(slots.get(i)));
+        };
+        choice = scanner.nextInt();
+        mbo.mealSlot = slots.get(choice).code;
+
+        List<MealFacility> facilities =
+            client.getAvailableMealFacilities(mbo.mealDate, mbo.mealSlot);
+        for (int i = 0; i < facilities.size(); i++)
+        {
+            System.out.print(i);
+            System.out.print(". ");
+            System.out.println(gson.toJson(facilities.get(i)));
+        };
+        choice = scanner.nextInt();
+        mbo.mealFacility = facilities.get(choice).code;
+
+        List<MealInfo> options =
+            client.getAvailableMeals(mbo.mealDate, mbo.mealSlot, mbo.mealFacility);
+        for (int i = 0; i < options.size(); i++)
+        {
+            System.out.print(i);
+            System.out.print(". ");
+            System.out.println(gson.toJson(options.get(i)));
+        };
+        choice = scanner.nextInt();
+        mbo.mealOption = options.get(choice).code;
+        mbo.mealSession = options.get(choice).sessionId;
+
+        System.out.print("How many days to book ahead?");
+        mbo.advanceBookingDays = scanner.nextInt();
+        System.out.println();
+
+        List<MealBookingResponse> mbrs = client.book(mbo);
+        for (int i = 0; i < mbrs.size(); i++)
+        {
+            System.out.print(i);
+            System.out.print(". ");
+            System.out.println(gson.toJson(mbrs.get(i)));
+        };
+
+        System.out.println("======================================================================");
+        System.out.println("FINISHED");
+        System.out.println("======================================================================");
     };
-
-    boolean book_meal(
-            String mealDate,
-            String mealSlot,
-            int    mealFacility,
-            int    mealOption,
-            int    mealSession,
-            int    advanceBookingDays,
-            boolean excludeWeekends
-            )
+    static void ClientGetAvailableMealSlots()
     {
-        String booking_json = create_booking_json( mealDate,
-            mealSlot,
-            mealFacility,
-            mealOption,
-            mealSession,
-            advanceBookingDays,
-            excludeWeekends);
+        Client client = new Client(base_url, cookies);
+        List<MealSlot> mealSlots;
+        String date = "2025-01-01";
+        MealBookingOptions mbo;
+        mbo = new MealBookingOptions();
+        mbo.mealDate = date;
 
-        //response = send_post(sun_mb_store_booking_link, security_cookies, booking_json);
-        URI uri = URI.create(sun_mb_store_booking_link);
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(uri)
-            .POST()
-            .setHeader("Cookie", security_cookies)
-        HttpResponse response = client.send(request, BodyHandlers.ofString());
-        System.out.println(response.statusCode());
-        System.out.println(response.body());
+        client.flushServer();
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(3, mealSlots.size());
 
-        return true;
-    }
+        mbo.mealSlot = MealSlot.BREAKFAST;
+        client.book(mbo);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(2, mealSlots.size());
+
+        mbo.mealSlot = MealSlot.LUNCH;
+        client.book(mbo);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(1, mealSlots.size());
+
+        mbo.mealSlot = MealSlot.DINNER;
+        client.book(mbo);
+        mealSlots = client.getAvailableMealSlots(date);
+        Assertions.assertEquals(0, mealSlots.size());
+    };
+    static void ClientGetAvailableMealFacilities()
+    {
+        Client client = new Client(base_url, cookies);
+        String date = "2025-01-01";
+        char   slot = MealSlot.BREAKFAST;
+        client.flushServer();
+
+        List<MealFacility> mealFacs = client.getAvailableMealFacilities(date, slot);
+        Assertions.assertEquals(7, mealFacs.size());
+    };
+    static void ClientGetAvailableMeals()
+    {
+        Client client = new Client(base_url, cookies);
+        String date  = "2025-01-01";
+        char slot    = MealSlot.BREAKFAST;
+        int facility = MealFacility.MAJUBA;
+        client.flushServer();
+
+        List<MealInfo> mealOptions = client.getAvailableMeals(date, slot, facility);
+        Assertions.assertEquals(25159, mealOptions.getLast().code);
+    };
+    static void ClientBookMeal()
+    {
+        Client client = new Client(base_url, cookies);
+        String date  = "2025-01-01";
+        char slot    = MealSlot.BREAKFAST;
+        int facility = MealFacility.MAJUBA;
+        MealBookingOptions mbo = new MealBookingOptions();
+        List<MealBookingResponse> mbr;
+
+        client.flushServer();
+        mbo.mealDate = date;
+        mbo.mealSlot = slot;
+        mbo.mealFacility = facility;
+
+        mbr = client.book(mbo);
+        Assertions.assertEquals(1, mbr.size());
+        Assertions.assertEquals("Booking successful", mbr.getFirst().bookingMessage);
+        Assertions.assertEquals(mbo.mealDate, mbr.getFirst().bookingDate);
+
+        mbr = client.book(mbo);
+        Assertions.assertEquals(1, mbr.size());
+        Assertions.assertEquals("Reservation already exists", mbr.getFirst().bookingMessage);
+        Assertions.assertEquals(mbo.mealDate, mbr.getFirst().bookingDate);
+
+        client.flushServer();
+        mbo.advanceBookingDays = 3;
+        mbr = client.book(mbo);
+        Assertions.assertEquals(4, mbr.size());
+        for (int i = 0; i < mbr.size(); i++)
+        {
+            Assertions.assertEquals("Booking successful", mbr.get(i).bookingMessage);
+        };
+
+        client.flushServer();
+        mbo.advanceBookingDays = 0;
+        mbo.mealDate = "2025-01-03";
+        mbr = client.book(mbo);
+
+        mbo.advanceBookingDays = 3;
+        mbo.mealDate = date;
+        mbr = client.book(mbo);
+        Assertions.assertEquals(4, mbr.size());
+        for (int i = 0; i < mbr.size(); i++)
+        {
+            if (i == 2) Assertions.assertEquals("Reservation already exists", mbr.get(i).bookingMessage);
+            else Assertions.assertEquals("Booking successful", mbr.get(i).bookingMessage);
+        };
+
+    };
+    static void ClientGetMealsBookedThisMonth()
+    {
+        Client client = new Client(base_url, cookies);
+        String date  = "2025-01-01";
+        char slot    = MealSlot.BREAKFAST;
+        int facility = MealFacility.MAJUBA;
+        MealBookingOptions mbo = new MealBookingOptions();
+
+        client.flushServer();
+        mbo.mealDate = "2025-01-01";
+        mbo.mealSlot = MealSlot.LUNCH;
+        client.book(mbo);
+        mbo.mealDate = "2025-01-02";
+        mbo.mealSlot = MealSlot.DINNER;
+        mbo.advanceBookingDays = 5;
+        client.book(mbo);
+
+        List<Meal> meals = client.getMealsBookedInMonth(date);
+        Assertions.assertEquals(1 + (1+5), meals.size());
+    };
+    static void ClientCancelMeal()
+    {
+        Client client = new Client(base_url, cookies);
+        String date  = "2025-01-01";
+        char slot    = MealSlot.BREAKFAST;
+        int facility = MealFacility.MAJUBA;
+        MealBookingOptions mbo = new MealBookingOptions();
+        List<Meal> meals;
+
+        client.flushServer();
+        mbo.mealDate = "2025-01-01";
+        mbo.mealSlot = MealSlot.LUNCH;
+        client.book(mbo);
+        mbo.mealDate = "2025-01-02";
+        mbo.mealSlot = MealSlot.DINNER;
+        mbo.advanceBookingDays = 5;
+        client.book(mbo);
+
+        meals = client.getMealsBookedInMonth(date);
+        Assertions.assertEquals(1 + (1+5), meals.size());
+        int numMealsBooked = meals.size();
+
+        MealCancelResponse mcr = client.cancel(meals.getFirst().id);
+        meals = client.getMealsBookedInMonth(date);
+        Assertions.assertEquals(numMealsBooked-1, meals.size());
+
+        mcr = client.cancel(9999); meals = client.getMealsBookedInMonth(date);
+        Assertions.assertEquals(numMealsBooked-1, meals.size());
+        Assertions.assertFalse(mcr.success);
+    };
 };
