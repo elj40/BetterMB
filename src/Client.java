@@ -22,6 +22,11 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+
 class Client
 {
     HttpClient httpClient = HttpClient.newBuilder().build();
@@ -38,6 +43,14 @@ class Client
         requestBuilder = HttpRequest.newBuilder()
                 .timeout(Duration.ofSeconds(5))
                 .setHeader("Cookie", cookies);
+    };
+    static public String getSecurityCookiesBySignIn()
+    {
+        WebDriver driver = new ChromeDriver();
+        driver.get("https://selenium.dev");
+
+        //driver.quit();
+        return null;
     };
     public List<MealSlot> getAvailableMealSlots(String date)
     {

@@ -6,25 +6,25 @@ import java.util.Scanner;
 
 import com.google.gson.Gson;
 //Cookie: NSC_MC_WT_xfc-bqqt.tvo.bd.ab_IUUQ=ffffffff91e0096a45525d5f4f58455e445a4a422d6c; jsessionid=CHw1X8Fgf4CPz1naOPPjRWCZ-ofXwFQSGXbXw5Rvm6yZANBvOKCF!-517264473
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.net.URI;
 class Main
 {
-    //static String base_url = "http://127.0.0.1:8080";
-    static String base_url = "https://web-apps.sun.ac.za";
-    //static String cookies = "urmom;sixseven";
-    static String cookies = "NSC_MC_WT_xfc-bqqt.tvo.bd.ab_IUUQ=ffffffff91e0096a45525d5f4f58455e445a4a422d6c; jsessionid=CHw1X8Fgf4CPz1naOPPjRWCZ-ofXwFQSGXbXw5Rvm6yZANBvOKCF!-517264473";
     static Gson gson = new Gson();
+
+    static String test_url = "http://127.0.0.1:8080";
+    static String cookies = "urmom;sixseven";
+    static String sun_url = "https://web-apps.sun.ac.za";
+    //static String cookies = "";
+
     public static void main(String[] args)
+    {
+        SeleniumGetSecurityCookies();
+    };
+    public void cli(String[] args)
     {
         int choice;
         String date = "2025-09-15";
         Scanner scanner = new Scanner(System.in);
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(sun_url, cookies);
         MealBookingOptions mbo = new MealBookingOptions();
 
         mbo.mealDate = date;
@@ -78,9 +78,19 @@ class Main
         System.out.println("FINISHED");
         System.out.println("======================================================================");
     };
+    static void SeleniumGetSecurityCookies()
+    {
+        String entryUrl = test_url;
+        String securityCookies = Client.getSecurityCookiesBySignIn();
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+        Assertions.assertTrue(securityCookies != null);
+        Assertions.assertTrue(securityCookies.contains("urmom"));
+        Assertions.assertTrue(securityCookies.contains("sixseven"));
+    };
     static void ClientGetAvailableMealSlots()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         List<MealSlot> mealSlots;
         String date = "2025-01-01";
         MealBookingOptions mbo;
@@ -108,7 +118,7 @@ class Main
     };
     static void ClientGetAvailableMealFacilities()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         String date = "2025-01-01";
         char   slot = MealSlot.BREAKFAST;
         client.flushServer();
@@ -118,7 +128,7 @@ class Main
     };
     static void ClientGetAvailableMeals()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         String date  = "2025-01-01";
         char slot    = MealSlot.BREAKFAST;
         int facility = MealFacility.MAJUBA;
@@ -129,7 +139,7 @@ class Main
     };
     static void ClientBookMeal()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         String date  = "2025-01-01";
         char slot    = MealSlot.BREAKFAST;
         int facility = MealFacility.MAJUBA;
@@ -178,7 +188,7 @@ class Main
     };
     static void ClientGetMealsBookedThisMonth()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         String date  = "2025-01-01";
         char slot    = MealSlot.BREAKFAST;
         int facility = MealFacility.MAJUBA;
@@ -198,7 +208,7 @@ class Main
     };
     static void ClientCancelMeal()
     {
-        Client client = new Client(base_url, cookies);
+        Client client = new Client(test_url, cookies);
         String date  = "2025-01-01";
         char slot    = MealSlot.BREAKFAST;
         int facility = MealFacility.MAJUBA;
