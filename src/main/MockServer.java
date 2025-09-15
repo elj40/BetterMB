@@ -63,17 +63,50 @@ class EchoHandler implements HttpHandler
         } catch (IOException e) { e.printStackTrace(); }
     }
 };
+class StaticTextHandler implements HttpHandler
+{
+    String text;
+    boolean addHeaders = false;
+    StaticTextHandler(String _text)
+    {
+        text = _text;
+    };
+    StaticTextHandler(String _text, boolean _headers)
+    {
+        text = _text;
+        addHeaders = _headers;
+    };
+    public final void handle(HttpExchange exchange) throws IOException
+    {
+        if (addHeaders)
+        {
+            Headers headers = exchange.getResponseHeaders();
+            String cookies[] = Common.securityCookies.split(";");
+            for (String cookie : cookies)
+            {
+                headers.add("Set-Cookie", cookie);
+            }
+        };
+        exchange.sendResponseHeaders(200, text.length());
+        OutputStream outputStream = exchange.getResponseBody();
+        outputStream.write(text.getBytes());
+        outputStream.close();
+        return;
+    };
+};
 abstract class SecurityHandler implements HttpHandler
 {
-    String securityCookie = "urmom;sixseven";
+    String securityCookie = Common.securityCookies;
     @Override
     public final void handle(HttpExchange exchange) throws IOException
     {
         if (!ensureSecurityCookies(exchange))
         {
-            exchange.sendResponseHeaders(403, 0);
+            exchange.sendResponseHeaders(200, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("(403) Request blocked by security".getBytes());
+            outputStream.write(
+                    "<!DOCTYPE html><html><body><h1>Single Sign-on</h1></body></html>"
+                    .getBytes());
             outputStream.close();
             return;
         }
@@ -86,7 +119,14 @@ abstract class SecurityHandler implements HttpHandler
         if (cookieHeader == null) return false;
 
         System.out.println("[Security] " + cookieHeader);
-        if (!cookieHeader.contains(securityCookie)) return false;
+        String[] cookies = cookieHeader.split(";");
+        if (cookies.length == 0) return false;
+        if (cookies[0].length() == 0) return false;
+        for (String cookie : cookies)
+        {
+            System.out.println("[Security] " + cookie);
+            if (!securityCookie.contains(cookie)) return false;
+        }
         return true;
     };
 
@@ -130,6 +170,13 @@ class MockServer {
             server.createContext(bookMealPath, new BookingHandler());
             server.createContext(cancelMealPath, new CancelHandler());
             server.createContext("/flush", new FlushHandler());
+            server.createContext("/sign-in", new StaticTextHandler(
+                        "<!DOCTYPE html><html><body><a href=\"/target\">Go to target</a></body></html>"
+                        ));
+            server.createContext("/target", new StaticTextHandler(
+                        "<!DOCTYPE html><html><body><h1>WELCOME!</h1></body></html>",
+                        true
+                        ));
 
             server.start();
             System.out.println("[SERVER] Serving at: " + server.getAddress());
@@ -339,11 +386,11 @@ class MockServer {
                 };
                 InputStream in = exchange.getRequestBody();
                 String requestBody = new String(in.readAllBytes());
-                // System.out.println("[BookingHandler] " + requestBody);
                 MealBookingOptions mbo = gson.fromJson(requestBody, MealBookingOptions.class);
 
                 if ("BLD".indexOf(mbo.mealSlot) == -1)
                 {
+                    System.out.println("[BookingHandler] Incorrect mealSlot: " + mbo.mealSlot);
                     exchange.sendResponseHeaders(400, 0);
                     OutputStream out = exchange.getResponseBody();
                     out.write("[BookingHandler] Bad request:\n".getBytes());
@@ -354,6 +401,7 @@ class MockServer {
                 };
                 if (mbo.mealDate == null)
                 {
+                    System.out.println("[BookingHandler] Bad date");
                     exchange.sendResponseHeaders(400, 0);
                     OutputStream out = exchange.getResponseBody();
                     out.write("[BookingHandler] Bad request:\n".getBytes());
@@ -370,11 +418,13 @@ class MockServer {
                 sb.append("[ ");
                 for (int i = 0; i <= mbo.advanceBookingDays; i++) {
                     String date = localDate.plusDays(i).format(dateFormatter);
+                    System.out.println(date);
                     if (i > 0) sb.append(", ");
 
                     if (isBookingOpen(date, mbo.mealSlot)) {
                         Meal meal = Meal.fromMBO(mbo, serverMealCounter++);
                         meal.canModify = i % 2 == 0;
+                        meal.start = date;
                         if (!bookings.containsKey(date)) bookings.put(date, new HashMap<>());
                         bookings.get(date).put(mbo.mealSlot, meal);
 
