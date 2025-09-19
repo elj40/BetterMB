@@ -13,9 +13,12 @@ class CustomStubHttpClient implements IHttpClient
     HttpResponse<String> response;
     boolean shouldThrowException = false;
     IOException exception;
+    int responseTimeMs = 0;
     @Override
     public HttpResponse<String> send(HttpRequest request, BodyHandler bodyHandler) throws IOException
     {
+        try { Thread.sleep(responseTimeMs); }
+        catch (Exception ex) { ex.printStackTrace(); };
         if (shouldThrowException) throw exception;
         return response;
     };
@@ -23,6 +26,10 @@ class CustomStubHttpClient implements IHttpClient
     {
         shouldThrowException = true;
         exception = e;
+    }
+    public void setResponseTimeMs(int ms)
+    {
+        responseTimeMs = ms;
     }
     public void setResponseFromString(int statusCode, String msg)
     {

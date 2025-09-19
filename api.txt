@@ -1,0 +1,82 @@
+./bettermb [student number]       -> student number so we can cache the results
+
+> show
+Enter a date (default=[today]):
+Requesting booked meals from [date] in the background...
+Cached bookings from [date]:
+...
+...
+...
+Wait for server result? [Y/n]
+Server bookings from [date]:
+...
+...
+
+> show [yyyy-mm-dd]
+Requesting booked meals from [date]...
+...
+...
+...
+> show [yyyy-mm-dd]
+Requesting booked meals from [date]...
+Failed to get booked meals: error message
+
+
+
+> book
+Enter a date (default=[today]):
+Select a slot:
+...
+...
+Select a facility:
+...
+...
+Select an option:
+...
+...
+Days to book ahead: ..
+Requesting to book meal(s)...
+Booking success
+Booking reserved
+....
+
+> book [B/L/D]
+Meal slot '[B/L/D]' not available
+> book [B/L/D]
+Select a facility:
+...
+
+> book [B/L/D] [facility]
+Meal facility not available
+> book [B/L/D] [facility]
+Select an option:
+....
+
+> book [B/L/D] [facility] ["option"]
+Meal option ["option"] not available
+> book [B/L/D] [facility] ["option"]
+Days to book ahead: ..
+
+> book [B/L/D] [facility] ["option"] [days]
+Booking success
+Booking reserved
+....
+
+> cancel
+Enter meal ID to cancel: [id]
+Cancelling meal with ID: [id]...
+Cancel was successful
+or cancel faild: error message
+> cancel [id]
+Cancel was successful
+or cancel faild
+
+> signin [student no]
+> signin
+{ Do browser stuff }
+Enter student no to save bookings across sessions (default=anonymous):
+> signin
+{ Do browser stuff }
+Sign in successful
+> signin
+Sign in failed

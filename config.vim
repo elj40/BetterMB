@@ -9,3 +9,5 @@ command! -nargs=* BSplitTerm :belowright split | term <args>
 nnoremap <Leader>t :BSplitTerm 
 
 nnoremap <leader>cc :BSplitTerm make test<cr>
+
+autocmd VimEnter * Lexplore | vertical resize 40

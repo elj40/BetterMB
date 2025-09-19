@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.http.HttpTimeoutException;
 
-class ClientMealsBookedThisMonthTest
+class ClientMealsBookedTest
 {
     Client client;
     CustomStubHttpClient stub;

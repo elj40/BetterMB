@@ -17,44 +17,57 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 class Client
 {
-    static boolean debugging = false;
+    static boolean debugging = true;
 
-    HttpClient httpClient = HttpClient.newBuilder().build();
     IHttpClient ihttpClient;
-    HttpRequest.Builder requestBuilder;
     Gson gson = new Gson();
-    String urlBase = "http://127.0.0.1:8080";
+    String urlBase = null;
+    String securityCookies = "default=cookie";
+
+    HttpRequest.Builder requestBuilder =
+        HttpRequest.newBuilder()
+        .timeout(Duration.ofSeconds(15));
+
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     Client()
     {
-        requestBuilder = HttpRequest.newBuilder()
-                .timeout(Duration.ofSeconds(15));
     };
-    Client(String _url_base, String cookies)
+    Client(IHttpClient _ihttpClient)
     {
-        urlBase = _url_base;
-
-        requestBuilder = HttpRequest.newBuilder()
-                .timeout(Duration.ofSeconds(15))
-                .setHeader("Cookie", cookies);
-    };
+        ihttpClient = _ihttpClient;
+    }
+    public void setUrlBase(String urlb)
+    {
+        urlBase = urlb;
+    }
     public void setCookies(String newCookies)
     {
+        securityCookies = newCookies;
         requestBuilder = requestBuilder.setHeader("Cookie", newCookies);
+    };
+    public String getCookies()
+    {
+        return securityCookies;
     };
     public void setHttpClient(IHttpClient newHttpClient)
     {
@@ -64,21 +77,25 @@ class Client
     {
         if (Client.debugging) System.out.println(msg);
     };
-    boolean ensureGoodResponse(HttpResponse<String> response) throws IOException
+    boolean ensureGoodResponse(HttpResponse<String> response)
+            throws IOException, SecurityFailedException
     {
         if (response.body().contains("Single Sign-on")) throw new SecurityFailedException();
         if (response.body().contains("html")) throw new SecurityFailedException();
-        if (response.statusCode() != 200) throw new IOException();
+        if (response.statusCode() != 200) throw new IOException("Status code not 200!");
 
         return true;
     };
     static public String getSecurityCookiesBySignIn(String entryUrl, String targetUrlStart)
             throws IOException, InterruptedException
     {
+        if (Client.debugging) Logger.getLogger("org.openqa.selenium").setLevel(Level.INFO);
+        else Logger.getLogger("org.openqa.selenium").setLevel(Level.SEVERE);
         WebDriver driver = new ChromeDriver();
         String securityCookies = "";
 
-        driver.get(entryUrl);
+        try { driver.get(entryUrl); }
+        catch (Exception e) { throw e; }
         Thread.sleep(500);
         String currentUrl = driver.getCurrentUrl();
         while (true)
@@ -101,10 +118,11 @@ class Client
             securityCookies = securityCookies + cookie.getValue();
         }
         Client.debug("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
+        driver.quit();
         return securityCookies;
     };
     public List<MealSlot> getAvailableMealSlots(String date)
-            throws IOException
+            throws IOException, SecurityFailedException
     {
         StringBuilder suffixSB = new StringBuilder();
         // TODO: assert that date is in correct format
@@ -234,6 +252,22 @@ class Client
 
         return mealCancelResponse;
     }
+    public CompletableFuture<List<Meal>> getMealsBookedInMonthAsync(String date)
+    {
+        return CompletableFuture.supplyAsync(() -> {
+            try { return getMealsBookedInMonth(date); }
+            catch (JsonSyntaxException ex)
+            {
+                if (Client.debugging) ex.printStackTrace();
+                return null;
+            }
+            catch (IOException ex)
+            {
+                if (Client.debugging) ex.printStackTrace();
+                return null;
+            }
+        });
+    };
     public List<Meal> getMealsBookedInMonth(String date) throws IOException
     {
         StringBuilder suffixSB = new StringBuilder();
@@ -246,7 +280,7 @@ class Client
             .GET()
             .build();
 
-        Client.debug("[GetMealsBookedInMonth] Sending " + urlSuffix);
+        Client.debug("[GetMealsBookedInMonth] Sending " + urlBase + urlSuffix);
         HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
         Client.debug("[GetMealsBookedInMonth] Status code: " + response.statusCode());
         Client.debug("[GetMealsBookedInMonth] Response   : " + response.body());
@@ -269,15 +303,13 @@ class Client
                 .uri(URI.create(urlBase + urlSuffix))
                 .build();
 
-            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+            HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
             Client.debug("[CLIENT] Flushing server: " + response.statusCode());
         }
         catch (ConnectException e) {
             System.out.println("ERROR: Failed to connect, exiting");
             System.exit(1);
         }
-        //catch (TimeoutException e) { Client.debug("[CLIENT] Timed out"); }
         catch (IOException e) { e.printStackTrace(); }
-        catch (InterruptedException e) { e.printStackTrace(); }
     };
 };

@@ -1,8 +1,4 @@
 import java.util.HashMap;
-import java.time.LocalDate;
-import java.time.DayOfWeek;
-import java.time.format.TextStyle;
-import java.util.Locale;
 // {"code":"0","description":"Select"},
 // {"code":"B","description":"Breakfast"},
 // {"code":"L","description":"Lunch"},
@@ -74,11 +70,7 @@ class MealBookingOptions
     public int mealOption;
     public int mealSession;
     public int advanceBookingDays;
-    public boolean excludeWeekends = true;
-    public String cliDisplayString()
-    {
-        return "TODO";
-    }
+    public boolean excludeWeekends = false;
 };
 class MealMaps
 {
@@ -142,25 +134,7 @@ class Meal
     String  borderColor;
     int     id;
 
-    static String cliDisplayHeaders()
-    {
-        return String.format("##. %-6s [%s] %-10s %-20s %s",
-                "ID",
-                "yyyy-mm-dd Day",
-                "Title",
-                "Facility",
-                "Description");
-    }
-    public String cliDisplayString()
-    {
-        String date = start.substring(0, "yyyy-mm-dd".length());
-        String day = LocalDate.parse(date)
-            .getDayOfWeek()
-            .getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
-        return String.format("%-6d [%s %s] %-10s %-20s %s", id, date, day, title, facility, description);
-    }
-
-    static Meal fromMBO(MealBookingOptions mbo, int id)
+    static Meal fromMBO(MealBookingOptions mbo, String start, int id)
     {
         Meal meal = new Meal();
         meal.id = id;
@@ -169,6 +143,9 @@ class Meal
         meal.description = MealMaps.CodeDescriptionMap.get(mbo.mealOption);
         meal.mealCost = MealMaps.CodeCostMap.get(mbo.mealOption);
         meal.title = MealMaps.CodeTitleMap.get(mbo.mealSlot);
+
+        if (mbo.mealDate == null) meal.start = start;
+        else meal.start = mbo.mealDate;
 
         return meal;
     };

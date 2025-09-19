@@ -422,7 +422,7 @@ class MockServer {
                     if (i > 0) sb.append(", ");
 
                     if (isBookingOpen(date, mbo.mealSlot)) {
-                        Meal meal = Meal.fromMBO(mbo, serverMealCounter++);
+                        Meal meal = Meal.fromMBO(mbo, date, serverMealCounter++);
                         meal.canModify = i % 2 == 0;
                         meal.start = date;
                         if (!bookings.containsKey(date)) bookings.put(date, new HashMap<>());
