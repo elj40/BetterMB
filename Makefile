@@ -1,23 +1,25 @@
-MEAL_CLASSES = build/Meal.class build/MealSlot.class
 SOURCE_PATH = src/main
 TEST_PATH = src/test
 LIB_PATH = lib
+DATA     = data
 BUILD_PATH = build
+MEAL_CLASSES = $(BUILD_PATH)/Meal.class $(BUILD_PATH)/MealSlot.class
 
-   CLI_CLASS = build/CLI.class
-  USER_CLASS = build/User.class
-CLIENT_CLASS = build/Client.class
-SERVER_CLASS = build/MockServer.class
-COMMON_CLASS = build/Common.class
+   CLI_CLASS = $(BUILD_PATH)/CLI.class
+  USER_CLASS = $(BUILD_PATH)/User.class
+CLIENT_CLASS = $(BUILD_PATH)/Client.class
+SERVER_CLASS = $(BUILD_PATH)/MockServer.class
+COMMON_CLASS = $(BUILD_PATH)/Common.class
 
-all: build/Main.class build/MockServer.class
+all: $(BUILD_PATH)/Main.class $(BUILD_PATH)/MockServer.class
 
-run: build/Main.class
-	java -cp "lib/*:lib/selenium/*:build" Main
+run: $(BUILD_PATH)/Main.class
+	java -cp "lib/*:lib/selenium/*:$(BUILD_PATH)" Main
 
 clean:
-	rm -rf build/
-	mkdir build
+	rm -rf $(BUILD_PATH)/
+	rm $(DATA)/*.json
+	mkdir $(BUILD_PATH)
 
 $(BUILD_PATH)/CustomStubHttpClient.class: $(TEST_PATH)/CustomStubHttpClient.java $(BUILD_PATH)/IHttpClient.class
 	javac -d $(BUILD_PATH) -cp "$(LIB_PATH)/*:$(BUILD_PATH)" $(TEST_PATH)/CustomStubHttpClient.java
@@ -45,42 +47,42 @@ test: $(TEST_CLASSES) $(EXCEPTION_CLASSES) $(CLIENT_CLASS) $(USER_CLASS) $(CLI_C
 	java -cp "$(BUILD_PATH):$(LIB_PATH)/*:$(LIB_PATH)/selenium/*" org.junit.platform.console.ConsoleLauncher --scan-classpath
 
 $(BUILD_PATH)/Manual.class: $(TEST_PATH)/Manual.java $(CLIENT_CLASS) $(USER_CLASS) $(CLI_CLASS) $(BUILD_PATH)/StubBookHttpClient.class
-	javac -d build -cp "lib/*:lib/selenium/*:build" $(TEST_PATH)/Manual.java
+	javac -d build -cp "lib/*:lib/selenium/*:$(BUILD_PATH)" $(TEST_PATH)/Manual.java
 
 testmanual: $(BUILD_PATH)/Manual.class
 	java -cp "$(BUILD_PATH):$(LIB_PATH)/*:$(LIB_PATH)/selenium/*" Manual
 
-build/IHttpClient.class: $(SOURCE_PATH)/IHttpClient.java
+$(BUILD_PATH)/IHttpClient.class: $(SOURCE_PATH)/IHttpClient.java
 	javac -d build $(SOURCE_PATH)/IHttpClient.java
 
 $(BUILD_PATH)/HttpClientImpl.class: $(SOURCE_PATH)/HttpClientImpl.java
-	javac -d build -cp "build" $(SOURCE_PATH)/HttpClientImpl.java
+	javac -d build -cp "$(BUILD_PATH)" $(SOURCE_PATH)/HttpClientImpl.java
 
-build/MealSlot.class: $(SOURCE_PATH)/Meal.java
+$(BUILD_PATH)/MealSlot.class: $(SOURCE_PATH)/Meal.java
 	javac -d build $(SOURCE_PATH)/Meal.java
 
-build/Meal.class: $(SOURCE_PATH)/Meal.java
+$(BUILD_PATH)/Meal.class: $(SOURCE_PATH)/Meal.java
 	javac -d build $(SOURCE_PATH)/Meal.java
 
-build/Common.class: $(SOURCE_PATH)/Common.java
+$(BUILD_PATH)/Common.class: $(SOURCE_PATH)/Common.java
 	javac -d build $(SOURCE_PATH)/Common.java
 
-build/Client.class: $(SOURCE_PATH)/Client.java $(BUILD_PATH)/IHttpClient.class $(EXCEPTION_CLASSES) $(MEAL_CLASSES) $(COMMON_CLASS)
-	javac -d build -cp "lib/*:lib/selenium/*:build" $(SOURCE_PATH)/Client.java
+$(BUILD_PATH)/Client.class: $(SOURCE_PATH)/Client.java $(BUILD_PATH)/IHttpClient.class $(EXCEPTION_CLASSES) $(MEAL_CLASSES) $(COMMON_CLASS)
+	javac -d build -cp "lib/*:lib/selenium/*:$(BUILD_PATH)" $(SOURCE_PATH)/Client.java
 
-build/User.class: $(SOURCE_PATH)/User.java $(MEAL_CLASSES)
-	javac -d build -cp "lib/*:build" $(SOURCE_PATH)/User.java
+$(BUILD_PATH)/User.class: $(SOURCE_PATH)/User.java $(MEAL_CLASSES)
+	javac -d build -cp "lib/*:$(BUILD_PATH)" $(SOURCE_PATH)/User.java
 
-build/MockServer.class: $(SOURCE_PATH)/MockServer.java $(MEAL_CLASSES) $(COMMON_CLASS)
-	javac -d build -cp "lib/*:build" $(SOURCE_PATH)/MockServer.java
+$(BUILD_PATH)/MockServer.class: $(SOURCE_PATH)/MockServer.java $(MEAL_CLASSES) $(COMMON_CLASS)
+	javac -d build -cp "lib/*:$(BUILD_PATH)" $(SOURCE_PATH)/MockServer.java
 
 $(BUILD_PATH)/ScannerCLI.class: $(SOURCE_PATH)/ScannerCLI.java
 	javac -d build $(SOURCE_PATH)/ScannerCLI.java
 
 $(CLI_CLASS): $(SOURCE_PATH)/CLI.java $(CLIENT_CLASS) $(USER_CLASS) $(MEAL_CLASS) $(BUILD_PATH)/ScannerCLI.class
-	javac -d build -cp "lib/*:lib/selenium/*:build" $(SOURCE_PATH)/CLI.java
+	javac -d build -cp "lib/*:lib/selenium/*:$(BUILD_PATH)" $(SOURCE_PATH)/CLI.java
 
-build/Main.class: $(SOURCE_PATH)/Main.java $(CLIENT_CLASS) $(MEAL_CLASSES) $(USER_CLASS) $(CLI_CLASS) $(BUILD_PATH)/HttpClientImpl.class
-	javac -d build -cp "lib/*:lib/selenium/*:build" $(SOURCE_PATH)/Main.java
+$(BUILD_PATH)/Main.class: $(SOURCE_PATH)/Main.java $(CLIENT_CLASS) $(MEAL_CLASSES) $(USER_CLASS) $(CLI_CLASS) $(BUILD_PATH)/HttpClientImpl.class
+	javac -d build -cp "lib/*:lib/selenium/*:$(BUILD_PATH)" $(SOURCE_PATH)/Main.java
 
 .PHONY: all
