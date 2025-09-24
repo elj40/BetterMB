@@ -1,3 +1,4 @@
+" This vim file is just to make this project a little nicer to code
 set noautochdir
 inoremap print System.out.println
 
