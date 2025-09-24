@@ -30,7 +30,7 @@ A client for the SU meal booking system along with a CLI that offers a better us
 - You don't have to comment everything, but please make sure its readable
 
 ## Licensing
-- All contributions must comply with the [Project License].
+- All contributions must comply with the GNU GPLv3 (software that uses this code must be open source on request).
 
 ## Review Process
 - Expect a code review before merging.
