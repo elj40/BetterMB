@@ -4,12 +4,13 @@ A client for the SU meal booking system along with a CLI that offers a better us
 ## Dependencies
 * [make](https://gnuwin32.sourceforge.net/packages/make.htm): required to build BetterMB
 * [Java](https://www.java.com/en/download/): required to compile and run the BetterMB
+* [Selenium-Java](https://www.selenium.dev/downloads/): needed for sign in
 * Source code
 
 ## Install
 1. Download the source code (either with `git clone` or download the zip)
 2. Execute `make dependencies` or check the Makefile and download them into the lib folder if you don't trust me (valid)
-2. Unzip lib/selenium.zip into lib/selenium
+2. Unzip selenium.zip into lib/selenium
 2. Execute `make`
 4. Execute `make test` (Optional)
 3. Execute `make run`

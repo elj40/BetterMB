@@ -113,7 +113,7 @@ $(LIB)/opentest4j-1.3.0.jar:
 	curl -o $(LIB)/opentest4j-1.3.0.jar https://repo1.maven.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar
 
 $(LIB)/selenium-java-4.35.0.zip:
-	curl -o $(LIB)/selenium-java-4.35.0.zip https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.35.0/selenium-java-4.35.0.zip
+	curl -L -o $(LIB)/selenium-java-4.35.0.zip https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.35.0/selenium-java-4.35.0.zip
 
 dependencies: $(DEPENDENCIES)
 
