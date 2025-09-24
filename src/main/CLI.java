@@ -199,7 +199,7 @@ class CLI
         client.setCookies(cookies);
 
         if (!checkArg) {
-            System.out.println("Enter an SU number to save bookings (default=anonymous): ");
+            System.out.println("Enter an SU number to save bookings (optional): ");
             su = scannerCLI.nextIntRangedWithDefault((int) 2e7, (int) 10e7, 0);
         }
 
@@ -232,6 +232,7 @@ class CLI
         try { meals = user.loadFromFile(filename); }
         catch (FileNotFoundException ex) {
             System.out.println("[load] Could not find: " + filename);
+            System.out.println("[load] Don't worry, its ok");
         }
         catch (IOException ex) {
             System.out.println("[load] Exception: " + ex.getMessage());
@@ -274,8 +275,8 @@ class CLI
 
         if (!checkArg) {
             do {
-                System.out.print("[book] Enter a date (default=["+today+" (today)]): ");
-                date = scannerCLI.nextDateWithDefault(today);
+                System.out.println("[book] Enter a date [yyyy-mm-dd]): ");
+                date = scannerCLI.nextDate();
             } while(date == null);
         }
 
