@@ -1,4 +1,5 @@
 data/*.json
+release*
 
 # Compiled class file
 *.class
