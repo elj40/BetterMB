@@ -40,8 +40,8 @@ application {
 }
 
 tasks.named('test') {
-    // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    reports.html.required = false
 }
 
 run {

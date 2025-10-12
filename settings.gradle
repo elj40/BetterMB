@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = 'BetterMB'
-include('app')
+include('bettermb')
