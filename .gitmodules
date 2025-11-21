@@ -1,0 +1,3 @@
+[submodule "bettermb-web"]
+	path = bettermb-web
+	url = https://github.com/elj40/BetterMB-Web.git
