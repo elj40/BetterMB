@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'com.google.code.gson:gson:2.13.1'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.36.0'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+        repositories {
+            mavenCentral()
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    reports.html.required = false
+}
