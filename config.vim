@@ -9,6 +9,6 @@ let g:netrw_winsize = 45
 command! -nargs=* BSplitTerm :belowright split | term <args>
 nnoremap <Leader>t :BSplitTerm 
 
-nnoremap <leader>cc :BSplitTerm make test<cr>
+nnoremap <leader>cc :BSplitTerm ./gradlew build<cr>
 
 autocmd VimEnter * Lexplore | vertical resize 40
