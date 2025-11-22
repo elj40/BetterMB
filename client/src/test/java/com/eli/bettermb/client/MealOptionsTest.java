@@ -1,3 +1,5 @@
+import com.eli.bettermb.client.*;
+
 import java.net.ConnectException;
 
 import org.junit.jupiter.api.Test;

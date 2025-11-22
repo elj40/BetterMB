@@ -1,3 +1,5 @@
+import com.eli.bettermb.client.*;
+
 import java.time.Duration;
 import java.time.Year;
 import java.time.LocalDate;
@@ -11,13 +13,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 import com.google.gson.Gson;
-//Cookie: NSC_MC_WT_xfc-bqqt.tvo.bd.ab_IUUQ=ffffffff91e0096a45525d5f4f58455e445a4a422d6c; jsessionid=CHw1X8Fgf4CPz1naOPPjRWCZ-ofXwFQSGXbXw5Rvm6yZANBvOKCF!-517264473
 class Main
 {
     static Gson gson = new Gson();
 
     static String test_url = "http://127.0.0.1:8080";
-    static String test_server_cookies = Common.securityCookies;
+    static String test_server_cookies = "urmom=isfat;sixseven=69";
     static String test_entry_url = test_url + "/sign-in";
     static String test_target_url = test_url + "/target";
 

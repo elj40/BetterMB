@@ -1,3 +1,6 @@
+import com.eli.bettermb.client.*;
+import com.eli.bettermb.client.IHttpClient;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpHeaders;
@@ -8,7 +11,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.io.IOException;
 
-class CustomStubHttpClient implements IHttpClient
+public class CustomStubHttpClient implements IHttpClient
 {
     HttpResponse<String> response;
     boolean shouldThrowException = false;

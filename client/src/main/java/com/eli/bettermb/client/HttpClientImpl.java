@@ -1,3 +1,5 @@
+package com.eli.bettermb.client;
+
 // CHATGPT
 import java.io.IOException;
 import java.net.http.HttpClient;

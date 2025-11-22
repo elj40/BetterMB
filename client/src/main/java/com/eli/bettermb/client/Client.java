@@ -1,3 +1,5 @@
+package com.eli.bettermb.client;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -33,9 +35,9 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-class Client
+public class Client
 {
-    static boolean debugging = true;
+    public static boolean debugging = true;
 
     IHttpClient ihttpClient;
     Gson gson = new Gson();
@@ -49,10 +51,10 @@ class Client
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    Client()
+    public Client()
     {
     };
-    Client(IHttpClient _ihttpClient)
+    public Client(IHttpClient _ihttpClient)
     {
         ihttpClient = _ihttpClient;
     }

@@ -1,3 +1,5 @@
+import com.eli.bettermb.client.*;
+
 import org.junit.jupiter.api.Assertions;
 
 import java.time.Duration;

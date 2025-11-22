@@ -1,3 +1,5 @@
+import com.eli.bettermb.client.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +29,7 @@ class ClientSignInTest
         targetCookies = "";
     };
     @Test
-    //@Disabled
+    @Disabled
     void testGetSecurityCookies()
     {
         try {targetCookies = Client.getSecurityCookiesBySignIn(urlEntry, urlTarget); }
