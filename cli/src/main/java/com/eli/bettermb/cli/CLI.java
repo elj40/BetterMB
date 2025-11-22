@@ -30,6 +30,26 @@ class CLI
     String signin_entry = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
     String signin_target = "https://web-apps.sun.ac.za";
 
+    static String sun_url = "https://web-apps.sun.ac.za";
+    static String mysun_link = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
+    static String sun_entry_url = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
+    static String sun_target_url = sun_url;
+
+    public static void main(String[] args) throws IOException,InterruptedException
+    {
+        boolean shouldDebug = false;
+        Client.debugging = shouldDebug;
+        CLI.debugging = shouldDebug;
+        User.debugging = shouldDebug;
+
+        Client client = new Client(new HttpClientImpl());
+        client.setUrlBase(sun_url);
+
+        CLI cli = new CLI(System.in);
+        cli.setClient(client);
+
+        cli.main();
+    };
     CLI(java.io.InputStream stream)
     {
         scannerCLI = new ScannerCLI(stream);
