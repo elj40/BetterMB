@@ -9,7 +9,6 @@ plugins {
 }
 
 rootProject.name = 'BetterMB'
-include('bettermb')
 include('client')
 include('cli')
 include('gui')

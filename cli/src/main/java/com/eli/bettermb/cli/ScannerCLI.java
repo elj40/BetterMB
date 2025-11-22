@@ -1,3 +1,5 @@
+package com.eli.bettermb.cli;
+
 // FILE WRITTEN BY CHATGPT!
 import java.util.Scanner;
 import java.util.regex.Pattern;

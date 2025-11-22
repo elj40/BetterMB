@@ -1,3 +1,5 @@
+package com.eli.bettermb.cli;
+
 import com.eli.bettermb.client.*;
 
 import java.nio.file.Files;
