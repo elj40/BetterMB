@@ -93,6 +93,12 @@ class ScannerCLI {
         }
         return 0; // Return 0 if input is not in the list
     }
+    public void reset() {
+        this.scanner.reset();
+    }
+    public void next() {
+        this.scanner.next();
+    }
 
     // Close the internal scanner when done
     public void close() {

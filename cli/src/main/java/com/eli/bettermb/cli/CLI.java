@@ -100,14 +100,8 @@ class CLI
             } else {
                 System.out.println("[show] Invalid argument:        " + arg);
                 System.out.println("[show] Expected date in format: yyyy-mm-dd");
+                return;
             }
-        }
-
-        if (!checkArg) {
-            do {
-                System.out.print("[show] Enter a date (default=["+today+"] (today)): ");
-                date = scannerCLI.nextDateWithDefault(today);
-            } while(date == null);
         }
 
         System.out.println("[show] Requesting booked meals from " + date + "...");
@@ -227,8 +221,9 @@ class CLI
             su = scannerCLI.nextIntRangedWithDefault((int) 2e7, (int) 10e7, 0);
         }
 
-        user.studentNumber = su;
+        if (su != 0) user.studentNumber = su;
         loadStoredMeals("data/"+ su + "_meals.json");
+        scannerCLI.nextLine();
     };
     public void quit()
     {
@@ -350,6 +345,7 @@ class CLI
         // Advance booking days
         System.out.println("How many days to book ahead? ");
         mbo.advanceBookingDays = scannerCLI.nextIntRanged(-1, 31);
+        scannerCLI.nextLine();
         if (mbo.advanceBookingDays == -1) return;
 
         System.out.println();
