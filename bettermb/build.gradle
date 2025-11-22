@@ -27,6 +27,7 @@ dependencies {
     implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.36.0'
 
     implementation(project(":client"))
+    testImplementation(testFixtures(project(":client")))
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
