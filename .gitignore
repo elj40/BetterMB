@@ -1,4 +1,4 @@
-cli/data/*.json
+cli/data/*
 release*
 web*
 
