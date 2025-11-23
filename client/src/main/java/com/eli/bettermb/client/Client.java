@@ -43,6 +43,7 @@ public class Client
     Gson gson = new Gson();
     String urlBase = null;
     String securityCookies = "default=cookie";
+    public List<Exception> asyncExceptions = new ArrayList<>();
 
     HttpRequest.Builder requestBuilder =
         HttpRequest.newBuilder()
@@ -258,14 +259,10 @@ public class Client
     {
         return CompletableFuture.supplyAsync(() -> {
             try { return getMealsBookedInMonth(date); }
-            catch (JsonSyntaxException ex)
+            catch (Exception ex)
             {
                 if (Client.debugging) ex.printStackTrace();
-                return null;
-            }
-            catch (IOException ex)
-            {
-                if (Client.debugging) ex.printStackTrace();
+                asyncExceptions.add(ex);
                 return null;
             }
         });

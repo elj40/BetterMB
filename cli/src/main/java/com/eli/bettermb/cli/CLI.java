@@ -4,20 +4,21 @@ import com.eli.bettermb.client.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.List;
+import java.util.Comparator;
 import java.util.Arrays;
 import java.util.ArrayList;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.DayOfWeek;
-import java.time.format.TextStyle;
-import java.util.Locale;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import com.google.gson.JsonSyntaxException;
 
 class CLI
 {
@@ -26,6 +27,7 @@ class CLI
     ScannerCLI scannerCLI;
     Client client;
     User user;
+    Waiter waiter = new Waiter();
 
     String signin_entry = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
     String signin_target = "https://web-apps.sun.ac.za";
@@ -34,6 +36,9 @@ class CLI
     static String mysun_link = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
     static String sun_entry_url = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
     static String sun_target_url = sun_url;
+
+    private boolean asyncSecurityFlag = false;
+    private String earliestDate = "9999-99-99";
 
     public static void main(String[] args) throws IOException,InterruptedException
     {
@@ -86,94 +91,93 @@ class CLI
             else this.help();
         }
     };
+    void updateUserMealsAsync(String date)
+    {
+        earliestDate = date;
+        System.out.println("[cli] Sending request to update meals");
+        CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(date);
+        waiter.markNotDone();
+        futureMeals.thenAccept(result -> {
+            user.mergeMeals(result);
+            waiter.markDone();
+
+            if (result == null) asyncSecurityFlag = true;
+        });
+    }
     public void show(String[] args)
     {
+        if (asyncSecurityFlag)
+        {
+            System.out.println("[security] ERROR: could not retrieve meals");
+            System.out.println("[security] (hint: try the \"signin\" command)");
+            asyncSecurityFlag = false;
+            return;
+        }
         String today = LocalDate.now().format(dateFormatter);
         String date = null;
-        boolean checkArg = false;
         if (args.length > 0)
         {
             String arg = args[0].trim();
             if (scannerCLI.checkDate(arg)) {
-                checkArg = true;
                 date = arg;
             } else {
                 System.out.println("[show] Invalid argument:        " + arg);
                 System.out.println("[show] Expected date in format: yyyy-mm-dd");
                 return;
             }
-        }
+        } else date = today;
 
-        System.out.println("[show] Requesting booked meals from " + date + "...");
+        if (date.compareTo(earliestDate) < 0)
+        {
+            updateUserMealsAsync(date);
+        };
+
+        System.out.println("[show] Showing booked meals from " + date + "...");
         System.out.println();
-        CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(date);
+
+        try { waiter.waitUntilDone(); }
+        catch (InterruptedException e)
+        {
+            System.out.println("[show] Received interrupt, escaping");
+            return;
+        }
 
         List<Meal> meals = new ArrayList<>();
-        if (user.meals.size() > 0)
-        {
-            System.out.println("[show] Cached bookings from " + date + ":");
-            System.out.println(mealBookingHeadersString());
-            meals = user.getMealsBookedFrom(date);
-            for (int i = 0; i < meals.size(); i++)
-            {
-                Meal meal = meals.get(i);
-                System.out.println(String.format("%02d. %s", i, mealBookingString(meal)));
-            }
-            System.out.println("");
-        }
-        System.out.print("[show] Wait for server result? [Y/n] ");
-        char choice;
-        do {
-            choice = scannerCLI.nextCharFromWithDefault("Yyn", 'y');
-        } while (choice == 0);
-        if (choice == 'n')
-        {
-            futureMeals.thenAccept(result -> user.mergeMeals(result));
-            return;
-        }
-
-        try { meals = futureMeals.get(); }
-        catch (Exception ex) { handleException(ex); }
-
-        if (meals == null) {
-            System.out.println("[show] Failed to get meals from server. If you have already done \"signin\", please report");
-            return;
-        } else {
-            user.overwriteMealsFromDate(meals, date);
-        }
-
-        System.out.println("[show] Server bookings from " + date + ":");
-        System.out.println(mealBookingHeadersString());
-
+        System.out.println(MealDisplay.headers());
         meals = user.getMealsBookedFrom(date);
+
+        meals.sort(Comparator.comparing(m -> m.start));
+
+        MealDisplay mealD;
+        MealDisplay pmealD = new MealDisplay();
         for (int i = 0; i < meals.size(); i++)
         {
-            Meal meal = meals.get(i);
-            System.out.println(String.format("%02d. %s", i, mealBookingString(meal)));
+            mealD = MealDisplay.fromMeal(meals.get(i));
+
+            if (i > 0 && !pmealD.date.equals(mealD.date)) System.out.println("");
+            System.out.println(String.format("%02d. %s", i, mealD.toString()));
+
+            pmealD = MealDisplay.fromMeal(meals.get(i));
         }
         System.out.println("");
     };
     public void cancel(String[] args)
     {
-        System.out.println("[cancel] At any option, enter -1 to cancel");
         int id = -1;
-        boolean checkArg = false;
-        if (args.length > 0)
+        if (args.length != 1)
         {
-            String arg = args[0].trim();
-            try {
-                id = Integer.parseInt(arg);
-                checkArg = true;
-            } catch (java.lang.NumberFormatException ex) {
-                System.out.println("[cancel] Invalid argument:        " + arg);
-                System.out.println("[cancel] Expected id in format: 1234567");
-            }
-        }
+            System.out.println("[cancel] ERROR: incorrect number of arguments");
+            System.out.println("[cancel] usage: cancel [meal_id]");
+            return;
+        };
 
-        if (!checkArg) {
-            System.out.println("Enter an id: ");
-            id = scannerCLI.nextIntRanged(-1, (int) 1e8);
-            if (id == -1) return;
+        String arg = args[0].trim();
+        try {
+            id = Integer.parseInt(arg);
+        } catch (java.lang.NumberFormatException ex) {
+            System.out.println("[cancel] Invalid argument:        " + arg);
+            System.out.println("[cancel] Expected id in format: 1234567");
+            return;
         }
 
         System.out.println("[cancel] Cancelling meal with ID: " + String.valueOf(id) + "...");
@@ -187,9 +191,10 @@ class CLI
             mcr = new MealCancelResponse();
         }
 
-        if (mcr.success) user.cancelByID(id);
-
         System.out.println("[cancel] " + mealCancelResponseString(mcr));
+
+        String today = LocalDate.now().format(dateFormatter);
+        updateUserMealsAsync(today);
     };
     public void signin(String args[])
     {
@@ -215,6 +220,8 @@ class CLI
             return;
         }
         client.setCookies(cookies);
+        String today = LocalDate.now().format(dateFormatter);
+        updateUserMealsAsync(today);
 
         if (!checkArg) {
             System.out.println("Enter an SU number to save bookings (optional): ");
@@ -223,7 +230,6 @@ class CLI
 
         if (su != 0) user.studentNumber = su;
         loadStoredMeals("data/"+ su + "_meals.json");
-        scannerCLI.nextLine();
     };
     public void quit()
     {
@@ -279,24 +285,21 @@ class CLI
         String today = LocalDate.now().format(dateFormatter);
         String date = null;
         int choice = 0;
-        boolean checkArg = false;
-        if (args.length > 0)
-        {
-            String arg = args[0].trim();
-            if (scannerCLI.checkDate(arg)) {
-                checkArg = true;
-                date = arg;
-            } else {
-                System.out.println("[book] Invalid argument:        " + arg);
-                System.out.println("[book] Expected date in format: yyyy-mm-dd");
-            }
-        }
 
-        if (!checkArg) {
-            do {
-                System.out.println("[book] Enter a date [yyyy-mm-dd]): ");
-                date = scannerCLI.nextDate();
-            } while(date == null);
+        if (args.length != 1)
+        {
+            System.out.println("[book] ERROR: incorrect number of arguments");
+            System.out.println("[book] usage: book [yyyy-mm-dd]");
+            return;
+        };
+
+        String arg = args[0].trim();
+        if (scannerCLI.checkDate(arg)) {
+            date = arg;
+        } else {
+            System.out.println("[book] Invalid argument:        " + arg);
+            System.out.println("[book] Expected date in format: yyyy-mm-dd");
+            return;
         }
 
         MealBookingOptions mbo = new MealBookingOptions();
@@ -357,6 +360,8 @@ class CLI
 
         if (mbrs == null) return;
         bookPrintResponseList(mbrs, this::mealBookingResponseString);
+
+        updateUserMealsAsync(date);
     };
     void student(String[] args)
     {
@@ -388,6 +393,8 @@ class CLI
         if (args.length > 0)
         {
             client.setCookies(args[0].trim());
+            String today = LocalDate.now().format(dateFormatter);
+            updateUserMealsAsync(today);
             return;
         }
         System.out.println(client.getCookies());
@@ -429,37 +436,6 @@ class CLI
         s += (mcr.message == null) ? "" : (": " + mcr.message);
         return s;
     };
-    String mealBookingHeadersString()
-    {
-        return String.format("##. %-7s [%s] %-10s %-20s %s",
-                "ID",
-                "yyyy-mm-dd Day",
-                "Title",
-                "Facility",
-                "Description");
-    };
-    String mealBookingString(Meal meal)
-    {
-        String idString;
-        if (meal.id == 0) idString = "?".repeat(7);
-        else idString = String.valueOf(meal.id);
-
-        String date = "?".repeat(10);
-        String day  = "???";
-        if (meal.start != null) {
-            date = meal.start.substring(0, "yyyy-mm-dd".length());
-            day = LocalDate.parse(date)
-                .getDayOfWeek()
-                .getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
-        }
-        return String.format("%-7s [%s %s] %-10s %-20s %s",
-                idString,
-                date,
-                day,
-                meal.title,
-                meal.facility,
-                meal.description);
-    }
     private void handleException(Exception ex)
     {
         System.out.println("YOOO, something went really wrong! Damn...");

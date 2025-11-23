@@ -31,6 +31,7 @@ class User
     Gson gson = new GsonBuilder()
         .setPrettyPrinting()
         .create();
+    List<String> asyncMessageBuffer = new ArrayList<>();
 
     public User()
     {

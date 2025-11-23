@@ -33,7 +33,11 @@ class ScannerCLI {
 
     public int nextIntRanged(int min, int max) {
         int x = min - 1;
-        while (x < min || x >= max) x = this.scanner.nextInt();
+        while (x < min || x >= max) 
+        {
+            try  { x = Integer.parseInt(this.scanner.nextLine()); }
+            catch (Exception ignore) { x = min - 1; };
+        }
         return x;
     }
     public int nextIntRangedWithDefault(int min, int max, int def) {
