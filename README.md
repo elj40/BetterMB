@@ -2,18 +2,16 @@
 A client for the SU meal booking system along with a CLI that offers a better user experience than the one provided by Stellenbosch University
 
 ## Dependencies
-* [make](https://gnuwin32.sourceforge.net/packages/make.htm): required to build BetterMB
-* [Java](https://www.java.com/en/download/): required to compile and run the BetterMB
-* [Selenium-Java](https://www.selenium.dev/downloads/): needed for sign in
-* Source code
+* [Java 21 JDK](https://www.oracle.com/java/technologies/downloads/#java21): required to compile and run BetterMB
+* Google Chrome
 
-## Install
+## Build from source
 1. Download the source code (either with `git clone` or download the zip)
-2. Execute `make dependencies` or check the Makefile and download them into the lib folder if you don't trust me (valid)
-2. Unzip selenium.zip into lib/selenium
-2. Execute `make`
-4. Execute `make test` (Optional)
-3. Execute `make run`
+2. Run './gradlew build' or './gradlew.bat build'
+3. Run './gradlew :cli:run' for the cli
+
+## Download precompiled
+* See releases for fat-jars and JRE images
 
 ## Contributing to BetterMB
 
