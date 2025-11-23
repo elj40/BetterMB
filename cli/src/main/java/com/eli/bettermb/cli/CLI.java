@@ -102,6 +102,7 @@ class CLI
             waiter.markDone();
 
             if (result == null) asyncSecurityFlag = true;
+            else asyncSecurityFlag = false;
         });
     }
     public void show(String[] args)
@@ -110,7 +111,7 @@ class CLI
         {
             System.out.println("[security] ERROR: could not retrieve meals");
             System.out.println("[security] (hint: try the \"signin\" command)");
-            asyncSecurityFlag = false;
+            //asyncSecurityFlag = false;
             return;
         }
         String today = LocalDate.now().format(dateFormatter);
@@ -281,7 +282,6 @@ class CLI
     }
     void book(String[] args)
     {
-        System.out.println("[book] At any option, enter -1 to cancel");
         String today = LocalDate.now().format(dateFormatter);
         String date = null;
         int choice = 0;
@@ -301,6 +301,7 @@ class CLI
             System.out.println("[book] Expected date in format: yyyy-mm-dd");
             return;
         }
+        System.out.println("[book] At any option, enter -1 to cancel");
 
         MealBookingOptions mbo = new MealBookingOptions();
         mbo.mealDate = date;
@@ -401,16 +402,30 @@ class CLI
     }
     void help()
     {
-        System.out.println("[help] Commands:");
-        System.out.println("\tsignin - sign in to pass security checks");
-        System.out.println("\tbook   - make a new meal booking");
-        System.out.println("\tshow   - show meal bookings in from a date");
-        System.out.println("\tcancel - cancel a meal booking using a meal ID");
-        System.out.println("\tquit   - quits the application");
-        System.out.println("\tcookie - [string] sets cookie if arg is passed, gets cookie if not");
-        System.out.println("\t         Copy to cookie to avoid signin for every session, cookies do expire");
-        System.out.println("\tstudent- [int] sets student number if arg is passed, gets student number if not");
-        System.out.println("\thelp   - displays this help command");
+        System.out.println(String.join("\n",
+                "[help] Arguments follow the format of [optional] and <required>",
+                "[help] Commands:",
+                "    signin [student_number]",
+                "           Sign in to pass security checks, optional [student_number] to save meals to computer.",
+                "    book <yyyy-mm-dd>",
+                "           Sake a new meal booking, required date in shown format.",
+                "    show [yyyy-mm-dd]",
+                "           Show meal bookings from a date.",
+                "           If no date provided will use today as default.",
+                "    cancel <id>",
+                "           Cancel a meal booking using a meal ID.",
+                "           Meal ID can be acquired using the \"show\" command.",
+                "    cookie [string]",
+                "           Sets cookie used to pass security.",
+                "           If no string is passed will display current cookie.",
+                "           Copy to cookie to avoid signin across sessions, cookies do expire.",
+                "    student [int]",
+                "           Sets student number.",
+                "           If no int is passed will display current student number.",
+                "           Used to load locally stored meals without sign in.",
+                "    quit   quits the application",
+                "    help   displays this help command"
+                ));
     };
     String mealSlotString(MealSlot m)
     {
