@@ -5,6 +5,10 @@ plugins {
     id 'org.beryx.runtime' version '2.0.1'
 }
 
+base {
+    archivesName = "bettermb-cli"
+}
+
 group = "com.eli"
 version = "1.1.0"
 
@@ -23,6 +27,18 @@ dependencies {
 
 application {
     mainClass = 'com.eli.bettermb.cli.CLI'
+    applicationName = "bettermb-cli"
+}
+
+shadowJar {
+    archiveBaseName.set("bettermb-cli")
+    archiveVersion.set(project.version)
+}
+
+runtime {
+    jpackage {
+        imageName = "bettermb-cli"
+    }
 }
 
 tasks.named("run") {
