@@ -43,7 +43,7 @@ class CLI
     public static void main(String[] args) throws IOException,InterruptedException
     {
         boolean shouldDebug = false;
-        Client.debugging = shouldDebug;
+        Client.debugging = true;
         CLI.debugging = shouldDebug;
         User.debugging = shouldDebug;
 
@@ -84,6 +84,7 @@ class CLI
             else if (action.equals("book")) this.book(args.toArray(argsArray));
             else if (action.equals("cancel")) this.cancel(args.toArray(argsArray));
             else if (action.equals("signin")) this.signin(args.toArray(argsArray));
+            else if (action.equals("quota")) this.quota(args.toArray(argsArray));
             else if (action.equals("cookie")) this.cookie(args.toArray(argsArray));
             else if (action.equals("student")) this.student(args.toArray(argsArray));
             else if (action.equals("help")) this.help();
@@ -161,6 +162,26 @@ class CLI
             pmealD = MealDisplay.fromMeal(meals.get(i));
         }
         System.out.println("");
+    };
+    public void quota(String[] args)
+    {
+        System.out.println("[quota] Fetching quota summary");
+        QuotaSummary qs = null;
+        try { qs = client.getQuotaSummary(); }
+        catch (SecurityFailedException ex) {
+            System.out.println("[security] Please sign in and try again");
+            return; }
+        catch (IOException ex) {
+            System.out.println("[quota] Exception: " + ex.getMessage());
+            return;
+        }
+
+        System.out.println("Quota Summary:");
+        if (qs.currentQuotaDesc != null) System.out.println("    current quota - " + qs.currentQuotaDesc);
+        if (qs.cobQuotaDesc != null) System.out.println("    cob quota     - " + qs.cobQuotaDesc);
+        if (qs.balanceDesc != null)  System.out.println("    balance       - " + qs.balanceDesc);
+        if (qs.mealUsageDesc != null) System.out.println("    mealUsage     - " + qs.mealUsageDesc);
+        if (qs.quotaPendingMessage != null) System.out.println("    quotaPending  - " + qs.quotaPendingMessage);
     };
     public void cancel(String[] args)
     {
@@ -403,7 +424,7 @@ class CLI
     void help()
     {
         System.out.println(String.join("\n",
-                "[help] Arguments follow the format of [optional] and <required>",
+                "[help] Arguments follow the format of [optional] and <required> (do not use brackets)",
                 "[help] Commands:",
                 "    signin [student_number]",
                 "           Sign in to pass security checks, optional [student_number] to save meals to computer.",
@@ -415,6 +436,8 @@ class CLI
                 "    cancel <id>",
                 "           Cancel a meal booking using a meal ID.",
                 "           Meal ID can be acquired using the \"show\" command.",
+                "    quota",
+                "           Show summary of quota, cob and balance",
                 "    cookie [string]",
                 "           Sets cookie used to pass security.",
                 "           If no string is passed will display current cookie.",

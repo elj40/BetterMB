@@ -35,6 +35,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// TODO: quota stuff
 public class Client
 {
     public static boolean debugging = true;
@@ -103,7 +104,7 @@ public class Client
         String currentUrl = driver.getCurrentUrl();
         while (true)
         {
-            Thread.sleep(5000);
+            Thread.sleep(1000);
             if (driver.getCurrentUrl().startsWith(targetUrlStart))
             {
                 Client.debug("[getSecurityCookiesBySignIn] On target page");
@@ -121,9 +122,31 @@ public class Client
             securityCookies = securityCookies + cookie.getValue();
         }
         Client.debug("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
-        driver.quit();
+        //driver.quit();
         return securityCookies;
     };
+    public QuotaSummary getQuotaSummary()
+            throws IOException, SecurityFailedException
+    {
+
+        StringBuilder suffixSB = new StringBuilder();
+        suffixSB.append("/student-meal-booking/spring/api/get-quota-summary/en");
+        String urlSuffix = suffixSB.toString();
+
+        HttpRequest request = requestBuilder
+            .uri(URI.create(urlBase + urlSuffix))
+            .build();
+
+        Client.debug("[GetQuotaSummary] Sending " + urlSuffix);
+        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
+        Client.debug("[GetQuotaSummary] Status code: " + response.statusCode());
+        Client.debug("[GetQuotaSummary] Response   : " + response.body());
+
+        ensureGoodResponse(response);
+
+        QuotaSummary quotaSummary = gson.fromJson(response.body(), QuotaSummary.class);
+        return quotaSummary;
+    }
     public List<MealSlot> getAvailableMealSlots(String date)
             throws IOException, SecurityFailedException
     {
