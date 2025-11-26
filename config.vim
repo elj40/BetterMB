@@ -10,6 +10,6 @@ command! -nargs=* BSplitTerm :belowright split | term <args>
 nnoremap <Leader>t :BSplitTerm 
 
 nnoremap <leader>cc :BSplitTerm ./gradlew classes<cr>
-nnoremap <leader>rr :BSplitTerm ./gradlew :cli:run --console=plain<cr>
+nnoremap <leader>rr :BSplitTerm ./gradlew :gui:run<cr>
 
 autocmd VimEnter * Lexplore | vertical resize 40
