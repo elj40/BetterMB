@@ -43,7 +43,7 @@ class CLI
     public static void main(String[] args) throws IOException,InterruptedException
     {
         boolean shouldDebug = false;
-        Client.debugging = true;
+        Client.debugging = shouldDebug;
         CLI.debugging = shouldDebug;
         User.debugging = shouldDebug;
 
