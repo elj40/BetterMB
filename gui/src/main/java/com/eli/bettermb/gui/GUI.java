@@ -5,10 +5,12 @@ import com.eli.bettermb.client.HttpClientImpl;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 import java.time.DayOfWeek;
 
 public class GUI
+    implements ActionListener
 {
     Client client;
     GuiUser user;
@@ -46,7 +48,8 @@ public class GUI
 
         JPanel header = new PanelHeader("BetterMB-GUI", "28178564");
         JPanel calendar = new PanelCalendar();
-        JPanel sidebar = new PanelSidebar(calendar, content);
+        PanelSidebar sidebar = new PanelSidebar(calendar, content);
+        sidebar.addListener(this);
 
         content.add(calendar, BorderLayout.CENTER);
 
@@ -56,9 +59,14 @@ public class GUI
 
         frame.setVisible(true);
     }
-    void addDebugFeatures(JComponent c)
+    public void actionPerformed(ActionEvent e)
     {
-        c.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        c.setOpaque(true);
+        Object source = e.getSource();
+        System.out.println(e.getActionCommand());
+        if (source instanceof ButtonCancel) cancel();
+    }
+    void cancel()
+    {
+        System.out.println("[STUB] cancel");
     }
 };
