@@ -7,15 +7,14 @@ import java.awt.event.*;
 import java.util.List;
 import java.util.ArrayList;
 
-class ButtonCancel extends Button implements ActionListener
+class ButtonBack extends Button implements ActionListener
 {
-    JPanel form;
     List<ActionListener> listeners = new ArrayList<>();
-    ButtonCancel(String text, JPanel form)
+    ButtonBack(String text, ActionListener form)
     {
         super(text);
-        this.form = form;
-        addActionListener(this);
+        addActionListener(form);
+        setActionCommand("BACK");
     }
     public void addListener(ActionListener a)
     {
@@ -24,9 +23,5 @@ class ButtonCancel extends Button implements ActionListener
     public void actionPerformed(ActionEvent e)
     {
         for (ActionListener l : listeners) l.actionPerformed(e);
-        //form.removeAll();
-        //form.add(new JLabel("TODO: cancel form"));
-        //form.revalidate();
-        //form.repaint();
     }
 };

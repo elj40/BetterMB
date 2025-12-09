@@ -18,8 +18,8 @@ class PanelCalendar extends JPanel
 
             JPanel arrows = JDebug.createDebugPanel();
             arrows.setLayout(new BorderLayout());
-            arrows.add(new Button("<"), BorderLayout.WEST);
-            arrows.add(new Button(">"), BorderLayout.EAST);
+            arrows.add(new Button("<-"), BorderLayout.WEST);
+            arrows.add(new Button("->"), BorderLayout.EAST);
             calHeader.add(arrows, BorderLayout.EAST);
         }
         add(calHeader, BorderLayout.NORTH);

@@ -16,4 +16,11 @@ class JDebug
         panel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         return panel;
     }
+    static JLabel createDebugLabel(String text)
+    {
+        JLabel label = new JLabel(text);
+        label.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        return label;
+    }
 };

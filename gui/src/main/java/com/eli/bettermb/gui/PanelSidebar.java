@@ -10,6 +10,7 @@ import java.util.ArrayList;
 class PanelSidebar extends JPanel implements ActionListener
 {
     List<ActionListener> listeners = new ArrayList<>();
+    JPanel actionsArea;
     PanelSidebar(JPanel calendar, JPanel content) {
         setLayout(new BorderLayout());
         JDebug.addDebugFeatures(this);
@@ -21,13 +22,14 @@ class PanelSidebar extends JPanel implements ActionListener
         }
         add(pages, BorderLayout.NORTH);
 
-        JPanel actionsArea = JDebug.createDebugPanel();
+        actionsArea = JDebug.createDebugPanel();
         {
             actionsArea.setLayout(new BoxLayout(actionsArea, BoxLayout.Y_AXIS));
             actionsArea.add(new ButtonBook("BOOK MEAL", actionsArea));
 
-            ButtonCancel buttonCancel = new ButtonCancel("CANCEL MEAL", actionsArea);
-            buttonCancel.addListener(this);
+            Button buttonCancel = new Button("CANCEL MEAL");
+            buttonCancel.setActionCommand("CANCEL");
+            buttonCancel.addActionListener(this);
 
             actionsArea.add(buttonCancel);
         }
@@ -39,7 +41,6 @@ class PanelSidebar extends JPanel implements ActionListener
     }
     public void actionPerformed(ActionEvent e)
     {
-        System.out.println(e.getActionCommand());
         for (ActionListener l : listeners) l.actionPerformed(e);
     }
 }
