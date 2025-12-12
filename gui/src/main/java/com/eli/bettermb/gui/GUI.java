@@ -25,7 +25,6 @@ public class GUI
         Client.debugging = shouldDebug;
         GuiUser.debugging = shouldDebug;
 
-
         Client client = new Client(new HttpClientImpl());
         client.setUrlBase(sun_url);
 
@@ -49,7 +48,7 @@ public class GUI
         content.setLayout(new BorderLayout());
 
         JPanel header = new PanelHeader("BetterMB-GUI", "28178564");
-        JPanel calendar = new PanelCalendar();
+        PanelCalendar calendar = new PanelCalendar();
         sidebar = new PanelSidebar(calendar, content);
         sidebar.addListener(this);
 
@@ -65,54 +64,119 @@ public class GUI
     }
     public void actionPerformed(ActionEvent e)
     {
-        Object source = e.getSource();
-        System.out.println(e.paramString());
         String cmd = e.getActionCommand();
+        System.out.println(cmd);
         if (cmd.equals("CANCEL")) setCancelActionArea();
         else if (cmd.equals("BOOK")) setBookActionArea();
         else if (cmd.equals("BACK")) setDefaultActionArea();
 
-        else if (cmd.equals("CANCEL_ID")) cancelMeal(source);
+        else if (cmd.equals("CANCEL_ID")) cancelIDHandler();
+        else if (cmd.equals("BOOK_DATE")) bookDateHandler();
+        else if (cmd.equals("BOOK_SLOT")) bookSlotHandler();
+        else if (cmd.equals("BOOK_FACL")) bookFaclHandler();
+        else if (cmd.equals("BOOK_OPTN")) bookOptnHandler();
+        else if (cmd.equals("BOOK_DAYS")) bookDaysHandler();
     }
-    void cancelMeal(Object src)
+    void cancelIDHandler()
     {
-        assert(src instanceof TextFieldWithButton);
-        var tfwb = (TextFieldWithButton) src;
+        Component expectedFC = sidebar.actionsArea.getComponent(0);
+        assert(expectedFC instanceof FormCancel);
+        FormCancel FC = (FormCancel) expectedFC;
 
-        String id_string = tfwb.textField.getText();
+        String id_string = FC.inputID.getText();
         System.out.println("[cancel: STUB] canceling meal with id " + id_string);
+
+        setDefaultActionArea();
     }
-    JPanel createTextFieldWithButton(String tf_text, String btn_label, String ac, ActionListener al)
+    void bookDateHandler()
     {
-        JPanel p = JDebug.createDebugPanel();
-        p.setLayout(new BorderLayout());
+        Component formExpected = sidebar.actionsArea.getComponent(0);
+        assert(formExpected instanceof FormBook);
 
-        JTextField tf = new JTextField(tf_text);
-        tf.addActionListener(al);
-        tf.setActionCommand(ac);
-        p.add(tf, BorderLayout.CENTER);
+        FormBook form = (FormBook) formExpected;
+        String text = form.dateInput.getText();
 
-        Button b = new Button(btn_label);
-        b.addActionListener(al);
-        b.setActionCommand(ac);
-        p.add(b, BorderLayout.EAST);
+        System.out.println("[book: STUB] date received as: " + text);
+        String[] stubReceivedSlots = { "Breakfast", "Lunch", "Dinner" };
 
-        return p;
+        form.slotInput.comboBox.removeAllItems();
+        form.slotInput.addItems(stubReceivedSlots);
+        form.slotInput.setEnabled(true);
+    }
+    void bookSlotHandler()
+    {
+        Component formExpected = sidebar.actionsArea.getComponent(0);
+        assert(formExpected instanceof FormBook);
+
+        FormBook form = (FormBook) formExpected;
+
+        if (!form.slotInput.comboBox.isEnabled()) return;
+        String text = form.slotInput.getText();
+
+        System.out.println("[book: STUB] slot received as: " + text);
+        String[] stubReceivedSlots = { "Huis Visser", "Majuba", "Minerva", "Dagbreek" };
+
+        form.faclInput.comboBox.removeAllItems();
+        form.faclInput.addItems(stubReceivedSlots);
+        form.faclInput.setEnabled(true);
+    }
+    void bookFaclHandler()
+    {
+        Component formExpected = sidebar.actionsArea.getComponent(0);
+        assert(formExpected instanceof FormBook);
+
+        FormBook form = (FormBook) formExpected;
+
+        if (!form.faclInput.comboBox.isEnabled()) return;
+        String text = form.faclInput.getText();
+
+        System.out.println("[book: STUB] facl received as: " + text);
+        String[] stubReceivedSlots = { "Standard Meal", "Extra Protein", "Halaal", "Vegetarian" };
+
+        form.optnInput.comboBox.removeAllItems();
+        form.optnInput.addItems(stubReceivedSlots);
+        form.optnInput.setEnabled(true);
+    }
+    void bookOptnHandler()
+    {
+        Component formExpected = sidebar.actionsArea.getComponent(0);
+        assert(formExpected instanceof FormBook);
+
+        FormBook form = (FormBook) formExpected;
+
+        if (!form.optnInput.comboBox.isEnabled()) return;
+        String text = form.optnInput.getText();
+
+        System.out.println("[book: STUB] optn received as: " + text);
+        form.daysInput.setEnabled(true);
+    }
+    void bookDaysHandler()
+    {
     }
     void setCancelActionArea()
     {
         JPanel form = sidebar.actionsArea;
-        form.setLayout(new GridLayout(0,1));
         form.removeAll();
 
-        form.add(JDebug.createDebugLabel("[Cancel] Enter meal ID:"));
-        form.add(new TextFieldWithButton("", ">", "CANCEL_ID", this));
-        form.add(new ButtonCommand("Back", "BACK", this));
+        FormCancel FC = new FormCancel();
+        FC.addActionListener(this);
+        form.add(FC);
 
         form.revalidate();
         form.repaint();
     }
-    void setBookActionArea() {};
+    void setBookActionArea()
+    {
+        JPanel form = sidebar.actionsArea;
+        form.removeAll();
+
+        FormBook FB = new FormBook();
+        FB.addActionListener(this);
+        form.add(FB);
+
+        form.revalidate();
+        form.repaint();
+    };
     void setDefaultActionArea()
     {
         JPanel form = sidebar.actionsArea;
