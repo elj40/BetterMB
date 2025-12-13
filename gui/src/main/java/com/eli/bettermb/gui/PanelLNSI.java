@@ -10,7 +10,7 @@ class PanelNSPI extends JPanel
 {
     JLabel label;
     JSpinner numberField;
-    Button button;
+    JButton button;
 
     String actionCommand;
     PanelNSPI(String label_str, String button_label)
@@ -24,7 +24,7 @@ class PanelNSPI extends JPanel
         numberField = new JSpinner(spinnerModel);
         add(numberField, BorderLayout.CENTER);
 
-        button = new Button(button_label);
+        button = new JButton(button_label);
         add(button, BorderLayout.EAST);
 
         setActionCommand("NSPI");

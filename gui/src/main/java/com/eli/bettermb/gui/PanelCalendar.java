@@ -9,21 +9,6 @@ import java.util.ArrayList;
 
 import java.time.DayOfWeek;
 
-class JPanelListener
-    extends JPanel
-    implements ActionListener
-{
-    List listeners = new ArrayList<ActionListener>();
-    void actionPerformed(ActionEvent e)
-    {
-        for (var l : listeners) l.actionPerformed(e);
-    }
-    void addActionListener(ActionListener a)
-    {
-        listeners.add(a);
-    }
-}
-
 class PanelCalendar extends JPanel
 {
     public JPanel header;
@@ -83,7 +68,7 @@ class PanelCalendar extends JPanel
                         //int days = month.lengthOfMonth();
                         int days = 31;
                         // Days with mock meal events
-                        class Cell extends JPanelListener {
+                        class Cell extends JPanel{
                             JButton day;
                             JButton slots[];
                             Cell(int month_day) {
@@ -93,7 +78,6 @@ class PanelCalendar extends JPanel
                                 String month_day_string = Integer.toString(month_day);
                                 day = new JButton(month_day_string);
                                 day.setActionCommand("CALENDAR_CELL_"+month_day_string+"_DAY");
-                                day.addActionListener(this);
 
                                 JDebug.addDebugFeatures(day);
                                 add(day);
@@ -104,7 +88,6 @@ class PanelCalendar extends JPanel
                                 {
                                     slots[i] = new JButton();
                                     JDebug.addDebugFeatures(slots[i]);
-                                    slots[i].addActionListener(this);
                                     slots[i].setActionCommand(
                                             "CALENDAR_CELL_"+
                                             month_day_string+

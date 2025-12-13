@@ -10,7 +10,7 @@ class PanelLFTI extends JPanel
 {
     JLabel label;
     JFormattedTextField textField;
-    Button button;
+    JButton button;
 
     String actionCommand;
     PanelLFTI(String label_str, String button_label, DefaultFormatter textfield_format)
@@ -23,7 +23,7 @@ class PanelLFTI extends JPanel
         textField = new JFormattedTextField(textfield_format);
         add(textField, BorderLayout.CENTER);
 
-        button = new Button(button_label);
+        button = new JButton(button_label);
         add(button, BorderLayout.EAST);
 
         setActionCommand("LabeledTextInput");

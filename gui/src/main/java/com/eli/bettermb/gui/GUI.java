@@ -42,6 +42,19 @@ public class GUI
         JFrame frame = new JFrame("BetterMB-GUI");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
+
+        MainView view = new MainView();
+        MainModel model = new MainModel();
+        MainController controller = new MainController(view, model);
+
+        frame.add(view);
+        frame.setVisible(true);
+    }
+    public void main2() {
+        final int frameSizeFactor = 50;
+        JFrame frame = new JFrame("BetterMB-GUI");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
         frame.setLayout(new BorderLayout());
 
         JPanel content = new JPanel();

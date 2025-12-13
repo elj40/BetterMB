@@ -8,25 +8,21 @@ import java.awt.event.*;
 // Labeled ComboBox Input
 class PanelLCBI extends JPanel
 {
-    JLabel label;
-    JComboBox comboBox;
-    Button button;
+    JLabel label = JDebug.createDebugLabel("");
+    JComboBox comboBox = new JComboBox();
+    JButton button = new JButton();
+
+    boolean shouldListenerIgnore = false;
 
     String actionCommand;
     PanelLCBI(String label_str, String button_label)
     {
         setLayout(new BorderLayout());
-
-        label = JDebug.createDebugLabel(label_str);
+        label.setText(label_str);
         add(label, BorderLayout.NORTH);
-
-        comboBox = new JComboBox();
         add(comboBox, BorderLayout.CENTER);
-
-        button = new Button(button_label);
+        button.setLabel(button_label);
         add(button, BorderLayout.EAST);
-
-        setActionCommand("LCBI");
     }
     String getText()
     {
