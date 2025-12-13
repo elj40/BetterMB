@@ -144,7 +144,6 @@ class MainController
 
         LabelInput curr = BFView.optnInput;
         LabelNumberSpinner next = BFView.daysInput;
-        diagnose("optn", info, curr.shouldListenerIgnore);
         // Just ignore first action, this is action from setting combobox
         suppressEvents=true;
 
