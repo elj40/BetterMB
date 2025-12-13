@@ -19,7 +19,7 @@ class MainView
         content.setLayout(new BorderLayout());
 
         header = new PanelHeader("BetterMB-GUI", "28178564");
-        var calendar = new PanelCalendar();
+        var calendar = new CalendarView();
         sidebar = new SidebarView();
 
         content.add(calendar, BorderLayout.CENTER);
@@ -76,7 +76,7 @@ class MainController
     void onGoToHome()
     {
         // Probably will need to do some model stuff here once we use the client
-        view.setContent(new PanelCalendar());
+        view.setContent(new CalendarView());
     }
     void cancelMeal(String id)
     {
