@@ -6,7 +6,8 @@ import java.awt.event.*;
 
 import javax.swing.text.*;
 
-class CancelFormView extends JPanel
+class CancelFormView
+    extends FormView
 {
     LabelFormatText inputID;
     JButton backButton = new JButton("Back");
@@ -31,6 +32,10 @@ class CancelFormView extends JPanel
     void onIDEnter(ActionListener listener)
     {
         inputID.addActionListener(listener);
+    }
+    void clearAllInputs()
+    {
+        inputID.setValue("");
     }
 }
 

@@ -13,6 +13,7 @@ abstract class LabelInput
 
     boolean shouldListenerIgnore = false;
     abstract String getText();
+    abstract void clear();
 
     LabelInput(String label_text, String button_text)
     {
@@ -66,6 +67,10 @@ class LabelComboBox extends LabelInput
         comboBox.removeActionListener(a);
         button.removeActionListener(a);
     }
+    void clear()
+    {
+        comboBox.removeAllItems();
+    }
 }
 
 
@@ -99,6 +104,14 @@ class LabelFormatText extends LabelInput
         textField.removeActionListener(a);
         button.removeActionListener(a);
     }
+    void clear()
+    {
+        textField.setValue("");
+    }
+    void setValue(String value)
+    {
+        textField.setValue(value);
+    }
 }
 
 // Labeled Number Spinner Input
@@ -120,6 +133,10 @@ class LabelNumberSpinner extends LabelInput
     public void setValue(int v)
     {
         numberField.setValue(v);
+    }
+    void clear()
+    {
+        numberField.setValue(0);
     }
     public void setEnabled(boolean enabled)
     {

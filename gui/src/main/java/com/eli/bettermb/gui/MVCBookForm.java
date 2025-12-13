@@ -9,7 +9,8 @@ import javax.swing.text.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-class BookFormView extends JPanel
+class BookFormView
+    extends FormView
 {
     LabelFormatText dateInput;
     LabelComboBox slotInput = new LabelComboBox("[Book] Select slot: ", ">");
@@ -62,6 +63,14 @@ class BookFormView extends JPanel
     void onOptnEnter(ActionListener listener) { optnInput.addActionListener(listener); };
     void onDaysEnter(ActionListener listener) { daysInput.addActionListener(listener); };
 
+    void clearAllInputs()
+    {
+        dateInput.textField.setValue(new Date());
+        slotInput.clear(); slotInput.setEnabled(false);
+        faclInput.clear(); faclInput.setEnabled(false);
+        optnInput.clear(); optnInput.setEnabled(false);
+        daysInput.clear(); daysInput.setEnabled(false);
+    }
     void disableInputsFrom(LabelInput in)
     {
         boolean disabling = false;

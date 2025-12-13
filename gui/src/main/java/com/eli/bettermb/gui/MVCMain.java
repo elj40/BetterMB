@@ -82,8 +82,9 @@ class MainController
     {
         System.out.println("[STUB] cancel meal " + id);
     }
-    void setActionsArea(JPanel panel)
+    void setActionsArea(FormView panel)
     {
+        panel.clearAllInputs();
         view.sidebar.setActionsArea(panel);
     }
     void bookingDateEntered(String info)

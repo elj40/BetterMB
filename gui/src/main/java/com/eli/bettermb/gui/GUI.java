@@ -17,7 +17,6 @@ public class GUI
 
     static String sun_url = "https://web-apps.sun.ac.za";
 
-    PanelSidebar sidebar;
     public static void main(String[] args)
     {
         boolean shouldDebug = false;

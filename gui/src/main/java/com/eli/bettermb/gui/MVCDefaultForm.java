@@ -3,7 +3,14 @@ package com.eli.bettermb.gui;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-class DefaultFormView extends JPanel
+
+abstract class FormView
+    extends JPanel
+{
+    abstract void clearAllInputs();
+}
+class DefaultFormView
+    extends FormView
 {
     JButton bookButton = new JButton("BOOK MEAL");
     JButton cancelButton = new JButton("CANCEL MEAL");
@@ -21,6 +28,7 @@ class DefaultFormView extends JPanel
     {
         cancelButton.addActionListener(listener);
     }
+    void clearAllInputs() {};
 }
 
 class DefaultFormController
