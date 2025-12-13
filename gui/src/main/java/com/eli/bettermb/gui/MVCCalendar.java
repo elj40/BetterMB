@@ -6,14 +6,20 @@ import java.awt.event.*;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import java.time.DayOfWeek;
+import java.time.YearMonth;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
 
 class CellView extends JPanel{
+    int mday;
     JButton day;
     JButton slots[];
     CellView(int month_day) {
         final int slots_count = 3;
+        mday = month_day;
         setLayout(new GridLayout(0,1));
 
         String month_day_string = Integer.toString(month_day);
@@ -31,66 +37,68 @@ class CellView extends JPanel{
             add(slots[i]);
         }
     }
+    void onDayPressed(ActionListener listener) { day.addActionListener(listener); };
+    void onSlotPressed(int i, ActionListener listener) { slots[i].addActionListener(listener); };
 }
 
-class CalendarDaysView extends JPanel {
-    JPanel cells[] = new JPanel[31];
-    CalendarDaysView() {
+class CalendarMonthView extends JPanel {
+    CellView cells[] = new CellView[31];
+    int monthLength;
+    CalendarMonthView() {
         JDebug.addDebugFeatures(this);
         setLayout(new GridLayout(0,7));
 
-        //LocalDate first = month.atDay(1);
-        //int shift = first.getDayOfWeek().getValue() % 7;
-        int shift = DayOfWeek.TUESDAY.getValue() % 7 - 1;
+        setMonth(YearMonth.now());
+    }
+    void setMonth(YearMonth month)
+    {
+        removeAll();
+        LocalDate first = month.atDay(1);
+        int shift = first.getDayOfWeek().getValue() % 7;
 
-        for (int i = 0; i < shift; i++) {
-            add(new JLabel(""));
-        }
+        for (int i = 0; i < shift; i++) { add(new JLabel("")); }
 
-        //int days = month.lengthOfMonth();
-        int days = 31;
-        // Days with mock meal events
-
-        JButton cellBreakfast = new JButton("BReakfst right now");
-        JDebug.addDebugFeatures(cellBreakfast);
-        JButton cellLunch = new JButton("Lunch soon");
-        JDebug.addDebugFeatures(cellLunch);
-        JButton cellDinner = new JButton("Dinner later");
-        JDebug.addDebugFeatures(cellDinner);
-
-        for (int day = 1; day <= days; day++)
+        monthLength = month.lengthOfMonth();
+        for (int day = 1; day <= monthLength; day++)
         {
             CellView cell = new CellView(day);
-            if (day % 2 ==0) cell.slots[0].setLabel("Breakfast");
-            if (day % 3 ==0) cell.slots[1].setLabel("Lunch");
-            if (day % 5 ==0) cell.slots[2].setLabel("Dinner");
-            // Dont need to repaint, will do it all one time at the end
             cells[day-1] = cell;
-            add(cells[day-1]);
+            add(cell);
         }
     }
 }
 class CalendarHeaderView extends JPanel {
-    public JButton today;
-    public JLabel month;
-    public JPanel arrows;
+    public JButton today = new JButton("today");
+    public JLabel month = new JLabel();
+    public JButton next = new JButton("->");
+    public JButton prev = new JButton("<-");
     CalendarHeaderView() {
         JDebug.addDebugFeatures(this);
         setLayout(new BorderLayout());
 
-        add(today = new JButton("today"), BorderLayout.WEST);
-        add(month = new JLabel("TODO: <Current Month>"), BorderLayout.CENTER);
+        add(today, BorderLayout.WEST);
+        add(month, BorderLayout.CENTER);
 
-        arrows = JDebug.createDebugPanel();
+        setMonth(YearMonth.now());
+
+        JPanel arrows = JDebug.createDebugPanel();
         arrows.setLayout(new BorderLayout());
-        arrows.add(new JButton("<-"), BorderLayout.WEST);
-        arrows.add(new JButton("->"), BorderLayout.EAST);
+        arrows.add(prev, BorderLayout.WEST);
+        arrows.add(next, BorderLayout.EAST);
         add(arrows, BorderLayout.EAST);
     }
+    void setMonth(YearMonth month)
+    {
+        this.month.setText(month.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, Locale.UK));
+    }
+    void onTodayPressed(ActionListener listener) { today.addActionListener(listener); }
+    void onPrevPressed(ActionListener listener) { prev.addActionListener(listener); }
+    void onNextPressed(ActionListener listener) { next.addActionListener(listener); }
 }
+
 class CalendarBodyView extends JPanel {
     public JPanel header;
-    public JPanel days;
+    public JPanel month;
     CalendarBodyView() {
         setLayout(new BorderLayout());
 
@@ -102,8 +110,7 @@ class CalendarBodyView extends JPanel {
             header.add(new JLabel(day.toString().substring(0,3)));
         }
         add(header, BorderLayout.NORTH);
-
-        add(days = new CalendarDaysView(), BorderLayout.CENTER);
+        add(month = new CalendarMonthView(), BorderLayout.CENTER);
     }
 }
 class CalendarView extends JPanel
