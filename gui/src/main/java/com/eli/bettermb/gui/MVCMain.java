@@ -52,6 +52,7 @@ class MainModel
 {
     List<Meal> getAllMealsToDisplay()
     {
+        //Placeholder till we set up client
         var meals = new ArrayList<Meal>();
         Color colors[] = { Color.YELLOW, Color.GREEN, Color.BLUE };
         char slots[] = { 'B', 'L', 'D' };
@@ -74,6 +75,16 @@ class MainModel
         }
         return meals;
     };
+    boolean isSlotBooked(LocalDate date, int slot)
+    {
+        System.out.println("TODO: MainModel.isSlotBooked()");
+        return true;
+    }
+    int getMealIDFromSlot(LocalDate date, int slot)
+    {
+        System.out.println("TODO: MainModel.getMealIDFromSlot()");
+        return 1234567;
+    }
 }
 class MainController
 {
@@ -156,12 +167,22 @@ class MainController
         System.out.print(day);
         System.out.print(", ");
         System.out.println(slot);
-        onCalendarDayPressed(month, day);
 
-        // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
-        BFView.slotInput.comboBox.setSelectedIndex(1+slot);
-        bookingSlotEntered(BFView.slotInput.getText());
-
+        LocalDate date = LocalDate.of(month.getYear(), month.getMonthValue(), day);
+        if (model.isSlotBooked(date, slot))
+        {
+            int mealID = model.getMealIDFromSlot(date, slot);
+            setAndClearActionsArea(CFView);
+            suppressEvents = true;
+            CFView.inputID.setValue(Integer.toString(mealID));
+            suppressEvents = false;
+        } else
+        {
+            onCalendarDayPressed(month, day);
+            // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
+            BFView.slotInput.comboBox.setSelectedIndex(1+slot);
+            bookingSlotEntered(BFView.slotInput.getText());
+        };
     }
     void bookingDateEntered(String info)
     {
