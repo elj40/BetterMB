@@ -7,12 +7,61 @@ import java.awt.event.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.HashMap;
 
 import java.time.DayOfWeek;
 import java.time.YearMonth;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 
+import com.eli.bettermb.client.Meal;
+
+class CellModel
+{
+    boolean empty;
+    static final HashMap<Character, Integer> SLOT_MAP = new HashMap<>();
+    static {
+        SLOT_MAP.put('B', 0);
+        SLOT_MAP.put('L', 1);
+        SLOT_MAP.put('D', 2);
+    }
+
+    String getDisplayString(Meal meal)
+    {
+        if (meal == null) return "Error: <null>";
+        return meal.title;
+    }
+    int getSlot(Meal meal)
+    {
+        if (meal == null) {} //IDK which slot to put the error meal in
+        return SLOT_MAP.get(meal.mealSlot);
+    }
+    Color getColor(Meal meal)
+            throws NumberFormatException
+    {
+        if (meal == null) return Color.RED;
+        return Color.decode(meal.backgroundColor);
+    }
+}
+class CellController
+{
+    CellView view;
+    CellModel model = new CellModel();
+    CellController(MainController MControl, CellView view)
+    {
+        this.view = view;
+    }
+    void setSlotDisplay(Meal meal)
+    {
+        String title = model.getDisplayString(meal);
+        int slot = model.getSlot(meal);
+        Color color = model.getColor(meal);
+
+        view.setSlotDisplay(slot, title, color);
+        // view.setExtraInfo()
+    }
+}
 class CellView extends JPanel{
     JButton day;
     JButton slots[];
@@ -36,6 +85,12 @@ class CellView extends JPanel{
             JDebug.addDebugFeatures(slots[i]);
             add(slots[i]);
         }
+    }
+    void setSlotDisplay(int slot, String label, Color color)
+    {
+        JButton s = slots[slot];
+        s.setLabel(label);
+        s.setBackground(color);
     }
     int getDay()
     {
@@ -120,20 +175,28 @@ class CalendarController
     CalendarView view;
     CalendarMonthView monthView;
     CalendarHeaderView headerView;
+
+    CellController cells[] = new CellController[31];
+    MainController MControl;
+
     CalendarController(MainController MControl, CalendarView view)
     {
         this.view = view;
+        this.MControl = MControl;
         monthView = view.body.body;
         headerView = view.header;
 
-        setMonth(currentMonth); // Set month before iterate cells
+        headerView.onTodayPressed(e -> MControl.setMonth(YearMonth.now()));
+        headerView.onNextPressed(e -> MControl.setMonth(currentMonth.plusMonths(1)));
+        headerView.onPrevPressed(e -> MControl.setMonth(currentMonth.minusMonths(1)));
 
-        headerView.onNextPressed(e -> setMonth(currentMonth.plusMonths(1)));
-        headerView.onPrevPressed(e -> setMonth(currentMonth.minusMonths(1)));
+        setMonth(currentMonth);
 
         for (int i = 0; i < monthView.monthLength; i++)
         {
             CellView c = monthView.cells[i];
+            cells[i] = new CellController(MControl, c);
+            // TODO: move into cell controller constructor
             c.onDayPressed(e -> MControl.onCalendarDayPressed(currentMonth, c.getDay()));
             c.onSlotPressed(0, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 0));
             c.onSlotPressed(1, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 1));
@@ -142,10 +205,29 @@ class CalendarController
     }
     void setMonth(YearMonth month)
     {
-        System.out.println(month.toString());
         headerView.setMonth(month);
         monthView.setMonth(month);
         currentMonth = month;
+
+        for (int i = 0; i < monthView.monthLength; i++)
+        {
+            CellView c = monthView.cells[i];
+            cells[i] = new CellController(MControl, c);
+            // TODO: move into cell controller constructor
+            c.onDayPressed(e -> MControl.onCalendarDayPressed(currentMonth, c.getDay()));
+            c.onSlotPressed(0, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 0));
+            c.onSlotPressed(1, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 1));
+            c.onSlotPressed(2, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 2));
+        }
+    }
+    void setCalendarMeals(List<Meal> meals)
+    {
+        for (Meal meal : meals)
+        {
+            //TODO: check that date is valid
+            int index = LocalDateTime.parse(meal.start).getDayOfMonth()-1;
+            cells[index].setSlotDisplay(meal);
+        }
     }
 }
 class CalendarView extends JPanel

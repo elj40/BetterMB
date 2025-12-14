@@ -8,6 +8,12 @@ import java.awt.event.*;
 import java.util.Date;
 import java.time.YearMonth;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import java.util.List;
+import java.util.ArrayList;
+
+import com.eli.bettermb.client.Meal;
 
 class MainView
     extends JPanel
@@ -44,6 +50,30 @@ class MainView
 }
 class MainModel
 {
+    List<Meal> getAllMealsToDisplay()
+    {
+        var meals = new ArrayList<Meal>();
+        Color colors[] = { Color.YELLOW, Color.GREEN, Color.BLUE };
+        char slots[] = { 'B', 'L', 'D' };
+        for (int i = 0; i < 7; i++)
+        {
+            var meal = new Meal();
+
+            int psrand1 = i * 90134017;
+            int psrand2 = i * 34257971;
+
+            int ci = psrand1 % 3;
+            int si = psrand2 % 3;
+            int di = ((psrand1%5 + psrand2%5) % 7);
+            String hex = "#"+Integer.toHexString(colors[ci].getRGB()).substring(2);
+            meal.backgroundColor = hex;
+            meal.mealSlot = slots[ci];
+            meal.title = "CHICKEN";
+            meal.start = LocalDateTime.now().withNano(0).plusDays(di).toString();
+            meals.add(meal);
+        }
+        return meals;
+    };
 }
 class MainController
 {
@@ -59,19 +89,29 @@ class MainController
     BookFormView BFView = new BookFormView(LocalDate.now());
     BookFormController BFControl = new BookFormController(this, BFView);
 
-    CalendarController CalControl;
+    CalendarController calControl;
     boolean suppressEvents;
 
     MainController(MainView view, MainModel model)
     {
         this.view = view;
         this.model = model;
-        CalControl = new CalendarController(this, view.calendar);
+        calControl = new CalendarController(this, view.calendar);
+
+        List<Meal> meals = model.getAllMealsToDisplay();
+        calControl.setCalendarMeals(meals);
 
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
         this.view.sidebar.onGoToHome(e -> onGoToHome());
 
         this.view.sidebar.setActionsArea(DFView);
+    }
+    void setMonth(YearMonth month)
+    {
+        // TODO: this should be per month
+        List<Meal> meals = model.getAllMealsToDisplay();
+        calControl.setMonth(month);
+        calControl.setCalendarMeals(meals);
     }
     void onGoToAbout()
     {
