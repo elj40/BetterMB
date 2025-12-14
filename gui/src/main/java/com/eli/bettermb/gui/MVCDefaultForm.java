@@ -35,7 +35,7 @@ class DefaultFormController
 {
     DefaultFormController(MainController MControl, DefaultFormView view)
     {
-        view.onCancelButtonPressed(e -> MControl.setActionsArea(MControl.CFView));
-        view.onBookButtonPressed(e -> MControl.setActionsArea(MControl.BFView));
+        view.onCancelButtonPressed(e -> MControl.setAndClearActionsArea(MControl.CFView));
+        view.onBookButtonPressed(e -> MControl.setAndClearActionsArea(MControl.BFView));
     }
 }

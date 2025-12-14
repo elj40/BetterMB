@@ -8,6 +8,8 @@ import javax.swing.text.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 class BookFormView
     extends FormView
@@ -28,14 +30,16 @@ class BookFormView
     JButton bookButton = new JButton("Book");
     JButton backButton = new JButton("Back");
 
-    BookFormView()
+    BookFormView(LocalDate date)
     {
         setLayout(new GridLayout(0,1));
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         DateFormatter dateFormatter = new DateFormatter(dateFormat);
         dateInput = new LabelFormatText("[Book] Enter date: ", ">", dateFormatter);
-        dateInput.textField.setValue(new Date());
+
+        Date d = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        dateInput.textField.setValue(d);
 
         slotInput.setEnabled(false);
         faclInput.setEnabled(false);
@@ -86,7 +90,7 @@ class BookFormController
 {
     BookFormController(MainController MControl, BookFormView view)
     {
-        view.onGoBack(e -> MControl.view.sidebar.setActionsArea(MControl.DFView));
+        view.onGoBack(e -> MControl.setAndClearActionsArea(MControl.DFView));
         view.onDateEnter(e ->  MControl.bookingDateEntered(view.dateInput.getText()) );
         view.onSlotEnter(e ->  MControl.bookingSlotEntered(view.slotInput.getText()) );
         view.onFaclEnter(e ->  MControl.bookingFaclEntered(view.faclInput.getText()) );

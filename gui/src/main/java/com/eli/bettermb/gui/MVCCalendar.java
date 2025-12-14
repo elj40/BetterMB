@@ -14,9 +14,9 @@ import java.time.LocalDate;
 import java.time.format.TextStyle;
 
 class CellView extends JPanel{
-    int mday;
     JButton day;
     JButton slots[];
+    int mday = 0;
     CellView(int month_day) {
         final int slots_count = 3;
         mday = month_day;
@@ -37,18 +37,20 @@ class CellView extends JPanel{
             add(slots[i]);
         }
     }
+    int getDay()
+    {
+        return Integer.parseInt(day.getLabel());
+    }
     void onDayPressed(ActionListener listener) { day.addActionListener(listener); };
     void onSlotPressed(int i, ActionListener listener) { slots[i].addActionListener(listener); };
 }
 
 class CalendarMonthView extends JPanel {
     CellView cells[] = new CellView[31];
-    int monthLength;
+    int monthLength = 0;
     CalendarMonthView() {
         JDebug.addDebugFeatures(this);
         setLayout(new GridLayout(0,7));
-
-        setMonth(YearMonth.now());
     }
     void setMonth(YearMonth month)
     {
@@ -65,6 +67,7 @@ class CalendarMonthView extends JPanel {
             cells[day-1] = cell;
             add(cell);
         }
+        repaint();
     }
 }
 class CalendarHeaderView extends JPanel {
@@ -78,8 +81,6 @@ class CalendarHeaderView extends JPanel {
 
         add(today, BorderLayout.WEST);
         add(month, BorderLayout.CENTER);
-
-        setMonth(YearMonth.now());
 
         JPanel arrows = JDebug.createDebugPanel();
         arrows.setLayout(new BorderLayout());
@@ -98,7 +99,7 @@ class CalendarHeaderView extends JPanel {
 
 class CalendarBodyView extends JPanel {
     public JPanel header;
-    public JPanel month;
+    public CalendarMonthView body;
     CalendarBodyView() {
         setLayout(new BorderLayout());
 
@@ -110,13 +111,47 @@ class CalendarBodyView extends JPanel {
             header.add(new JLabel(day.toString().substring(0,3)));
         }
         add(header, BorderLayout.NORTH);
-        add(month = new CalendarMonthView(), BorderLayout.CENTER);
+        add(body = new CalendarMonthView(), BorderLayout.CENTER);
+    }
+}
+class CalendarController
+{
+    YearMonth currentMonth = YearMonth.now();
+    CalendarView view;
+    CalendarMonthView monthView;
+    CalendarHeaderView headerView;
+    CalendarController(MainController MControl, CalendarView view)
+    {
+        this.view = view;
+        monthView = view.body.body;
+        headerView = view.header;
+
+        setMonth(currentMonth); // Set month before iterate cells
+
+        headerView.onNextPressed(e -> setMonth(currentMonth.plusMonths(1)));
+        headerView.onPrevPressed(e -> setMonth(currentMonth.minusMonths(1)));
+
+        for (int i = 0; i < monthView.monthLength; i++)
+        {
+            CellView c = monthView.cells[i];
+            c.onDayPressed(e -> MControl.onCalendarDayPressed(currentMonth, c.getDay()));
+            c.onSlotPressed(0, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 0));
+            c.onSlotPressed(1, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 1));
+            c.onSlotPressed(2, e -> MControl.onCalendarSlotPressed(currentMonth, c.getDay(), 2));
+        }
+    }
+    void setMonth(YearMonth month)
+    {
+        System.out.println(month.toString());
+        headerView.setMonth(month);
+        monthView.setMonth(month);
+        currentMonth = month;
     }
 }
 class CalendarView extends JPanel
 {
-    public JPanel header;
-    public JPanel body;
+    public CalendarHeaderView header;
+    public CalendarBodyView body;
     CalendarView()
     {
         setLayout(new BorderLayout());

@@ -43,7 +43,7 @@ class CancelFormController
 {
     CancelFormController(MainController MControl, CancelFormView view)
     {
-        view.onGoBack(e -> MControl.setActionsArea(MControl.DFView));
+        view.onGoBack(e -> MControl.setAndClearActionsArea(MControl.DFView));
         view.onIDEnter(e -> {
             String text = view.inputID.getText();
             MControl.cancelMeal(text);

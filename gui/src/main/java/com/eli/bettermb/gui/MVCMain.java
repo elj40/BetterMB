@@ -5,12 +5,19 @@ import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
 
+import java.util.Date;
+import java.time.YearMonth;
+import java.time.LocalDate;
+
 class MainView
     extends JPanel
 {
     JPanel header;
     SidebarView sidebar;
+
     JPanel content;
+    CalendarView calendar = new CalendarView();
+
     MainView()
     {
         setLayout(new BorderLayout());
@@ -19,7 +26,6 @@ class MainView
         content.setLayout(new BorderLayout());
 
         header = new PanelHeader("BetterMB-GUI", "28178564");
-        var calendar = new CalendarView();
         sidebar = new SidebarView();
 
         content.add(calendar, BorderLayout.CENTER);
@@ -50,15 +56,17 @@ class MainController
     CancelFormView CFView = new CancelFormView();
     CancelFormController CFControl = new CancelFormController(this, CFView);
 
-    BookFormView BFView = new BookFormView();
+    BookFormView BFView = new BookFormView(LocalDate.now());
     BookFormController BFControl = new BookFormController(this, BFView);
 
+    CalendarController CalControl;
     boolean suppressEvents;
 
     MainController(MainView view, MainModel model)
     {
         this.view = view;
         this.model = model;
+        CalControl = new CalendarController(this, view.calendar);
 
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
         this.view.sidebar.onGoToHome(e -> onGoToHome());
@@ -76,16 +84,38 @@ class MainController
     void onGoToHome()
     {
         // Probably will need to do some model stuff here once we use the client
-        view.setContent(new CalendarView());
+        view.setContent(view.calendar);
     }
     void cancelMeal(String id)
     {
         System.out.println("[STUB] cancel meal " + id);
     }
-    void setActionsArea(FormView panel)
+    void setAndClearActionsArea(FormView panel)
     {
         panel.clearAllInputs();
         view.sidebar.setActionsArea(panel);
+    }
+    void setActionsArea(FormView panel)
+    {
+        view.sidebar.setActionsArea(panel);
+    }
+    void onCalendarDayPressed(YearMonth month, int day)
+    {
+        System.out.print("TODO: onCalendarDayPressed, ");
+        LocalDate date = LocalDate.of(month.getYear(), month.getMonthValue(), day);
+        BFView = new BookFormView(date);
+        BFControl = new BookFormController(this, BFView);
+        setActionsArea(BFView);
+        bookingDateEntered(date.toString());
+    }
+    void onCalendarSlotPressed(YearMonth month, int day, int slot)
+    {
+        // TODO: I dont wanna know which slot was selected
+        // better to know which meal that slot represents (meal title, meal code or something)
+        System.out.print("TODO: onCalendarSlotPressed, ");
+        System.out.print(day);
+        System.out.print(", ");
+        System.out.println(slot);
     }
     void bookingDateEntered(String info)
     {
