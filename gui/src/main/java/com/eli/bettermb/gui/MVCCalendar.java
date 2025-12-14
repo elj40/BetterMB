@@ -54,7 +54,7 @@ class CalendarMonthView extends JPanel {
     {
         removeAll();
         LocalDate first = month.atDay(1);
-        int shift = first.getDayOfWeek().getValue() % 7;
+        int shift = (first.getDayOfWeek().getValue() % 7) - 1;
 
         for (int i = 0; i < shift; i++) { add(new JLabel("")); }
 
