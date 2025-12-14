@@ -116,10 +116,18 @@ class MainController
         System.out.print(day);
         System.out.print(", ");
         System.out.println(slot);
+        onCalendarDayPressed(month, day);
+
+        // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
+        BFView.slotInput.comboBox.setSelectedIndex(1+slot);
+        bookingSlotEntered(BFView.slotInput.getText());
+
     }
     void bookingDateEntered(String info)
     {
         if (suppressEvents) return;
+
+        // TODO: use model to see if it was valid
         LabelComboBox next = BFView.slotInput;
         // Use model to figure out what data to fill in the next field
         String[] stubReceived= {"", "Breakfast", "Lunch", "Dinner" };
@@ -136,6 +144,8 @@ class MainController
     void bookingSlotEntered(String info)
     {
         if (suppressEvents) return;
+        // TODO: use model to see if it was valid
+
         String[] stubReceived= { "", "Huis Visser", "Majuba", "Minerva", "Dagbreek" };
 
         LabelInput curr = BFView.slotInput;
@@ -156,6 +166,7 @@ class MainController
         if (suppressEvents) return;
         String[] stubReceived= {"", "Standard Meal", "Extra Protein", "Halaal", "Vegetarian" };
 
+        // TODO: use model to see if it was valid
         LabelInput curr = BFView.faclInput;
         LabelComboBox next = BFView.optnInput;
 
@@ -173,6 +184,7 @@ class MainController
     {
         if (suppressEvents) return;
 
+        // TODO: use model to see if it was valid
         LabelInput curr = BFView.optnInput;
         LabelNumberSpinner next = BFView.daysInput;
         // Just ignore first action, this is action from setting combobox
@@ -186,6 +198,7 @@ class MainController
     };
     void bookingDaysEntered(String info)
     {
+        // TODO: use model to see if it was valid
         System.out.println("bookingDaysEntered: " + info);
         // model.setDays(info)
         // model.book()
