@@ -50,10 +50,10 @@ class MainView
 }
 class MainModel
 {
-    List<Meal> getAllMealsToDisplay()
+    List<CalendarMealView> getAllMealsToDisplay()
     {
         //Placeholder till we set up client
-        var meals = new ArrayList<Meal>();
+        var meals = new ArrayList<CalendarMealView>();
         Color colors[] = { Color.YELLOW, Color.GREEN, Color.BLUE };
         char slots[] = { 'B', 'L', 'D' };
         for (int i = 0; i < 7; i++)
@@ -66,12 +66,12 @@ class MainModel
             int ci = psrand1 % 3;
             int si = psrand2 % 3;
             int di = ((psrand1%5 + psrand2%5) % 7);
-            String hex = "#"+Integer.toHexString(colors[ci].getRGB()).substring(2);
-            meal.backgroundColor = hex;
-            meal.mealSlot = slots[ci];
-            meal.title = "CHICKEN";
-            meal.start = LocalDateTime.now().withNano(0).plusDays(di).toString();
-            meals.add(meal);
+
+            var date = LocalDate.now().plusDays(di);
+            var slot = si;
+            var label = "CHICKEN";
+            var color = colors[ci];
+            meals.add(new CalendarMealView(date, slot, new SlotMealView(label, color)));
         }
         return meals;
     };
@@ -109,7 +109,7 @@ class MainController
         this.model = model;
         calControl = new CalendarController(this, view.calendar);
 
-        List<Meal> meals = model.getAllMealsToDisplay();
+        List<CalendarMealView> meals = model.getAllMealsToDisplay();
         calControl.setCalendarMeals(meals);
 
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
@@ -117,10 +117,11 @@ class MainController
 
         this.view.sidebar.setActionsArea(DFView);
     }
+
     void setMonth(YearMonth month)
     {
         // TODO: this should be per month
-        List<Meal> meals = model.getAllMealsToDisplay();
+        List<CalendarMealView> meals = model.getAllMealsToDisplay();
         calControl.setMonth(month);
         calControl.setCalendarMeals(meals);
     }
@@ -150,25 +151,22 @@ class MainController
     {
         view.sidebar.setActionsArea(panel);
     }
-    void onCalendarDayPressed(YearMonth month, int day)
+    void onCalendarDayPressed(LocalDate date)
     {
         System.out.print("TODO: onCalendarDayPressed, ");
-        LocalDate date = LocalDate.of(month.getYear(), month.getMonthValue(), day);
         BFView = new BookFormView(date);
         BFControl = new BookFormController(this, BFView);
         setActionsArea(BFView);
         bookingDateEntered(date.toString());
     }
-    void onCalendarSlotPressed(YearMonth month, int day, int slot)
+    void onCalendarSlotPressed(LocalDate date, int slot)
     {
         // TODO: I dont wanna know which slot was selected
         // better to know which meal that slot represents (meal title, meal code or something)
+        // ^--> I prefer slots now since I am going to let the model deal with that headache
         System.out.print("TODO: onCalendarSlotPressed, ");
-        System.out.print(day);
-        System.out.print(", ");
         System.out.println(slot);
 
-        LocalDate date = LocalDate.of(month.getYear(), month.getMonthValue(), day);
         if (model.isSlotBooked(date, slot))
         {
             int mealID = model.getMealIDFromSlot(date, slot);
@@ -178,7 +176,7 @@ class MainController
             suppressEvents = false;
         } else
         {
-            onCalendarDayPressed(month, day);
+            onCalendarDayPressed(date);
             // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
             BFView.slotInput.comboBox.setSelectedIndex(1+slot);
             bookingSlotEntered(BFView.slotInput.getText());

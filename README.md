@@ -45,3 +45,6 @@ A client for the SU meal booking system along with a CLI that offers a better us
 - Contributors will be acknowledged in the CONTRIBUTORS.md file.
 
 Thank you for your contributions!
+
+# Issues
+- The way we pack the data is gonna be pretty repetitive, not a problem since amount is tiny, but maybe look into
