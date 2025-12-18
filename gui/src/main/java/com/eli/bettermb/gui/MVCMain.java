@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Random;
+import java.util.Iterator;
 
 import java.lang.IllegalArgumentException;
 
@@ -56,7 +58,7 @@ class MainView
 }
 class MainModel
 {
-    List meals = new ArrayList<Meal>();
+    List<Meal> meals = new ArrayList<>();
     MealBookingOptions mealBookingOptions;
     private boolean mboDateSet = false;
     private boolean mboSlotSet = false;
@@ -70,6 +72,33 @@ class MainModel
     // Session map should have exact, same keys. Consider merging into one map
     private Map SessionCodeMap  = new HashMap<String, Integer>();
 
+    final char[] SlotCodes = {'B', 'L', 'D'};
+
+    MainModel()
+    {
+        Iterator<Integer> random = (new Random()).ints().iterator();
+        // Temporary stuff to set up for testing
+        for (int i = 0; i < 10; i++)
+        {
+            Meal meal = new Meal();
+            meal.canModify = ((random.next() % 2) == 0);
+
+            var time = LocalDateTime.now().plusDays(random.next()%7);
+
+            meal.title = "Meal";
+            meal.start = time.toString();
+            meal.description = "Food";
+            meal.facility = "Majubs";
+            meal.mealTime = time.toLocalTime().toString();
+            meal.mealCost = "R99.99";
+            meal.mealSlot = SlotCodes[java.lang.Math.abs(random.next()) % 3];
+            meal.backgroundColor = "#123456";
+            meal.borderColor = "#123456";
+            meal.id = random.next() % 10000000;
+            meals.add(meal);
+        }
+
+    }
     void startMealBooking()
     {
         mealBookingOptions = new MealBookingOptions();
@@ -176,27 +205,19 @@ class MainModel
     List<CalendarMealView> getAllMealsToDisplay()
     {
         //Placeholder till we set up client
-        var meals = new ArrayList<CalendarMealView>();
+        var mealViews = new ArrayList<CalendarMealView>();
         Color colors[] = { Color.YELLOW, Color.GREEN, Color.BLUE };
-        char slots[] = { 'B', 'L', 'D' };
-        for (int i = 0; i < 7; i++)
+        for (Meal m : meals)
         {
-            var meal = new Meal();
+            var date = LocalDate.parse(m.start.substring(0,m.start.indexOf('T')));
+            int slot = 0;
+            for (int i = 0; i < SlotCodes.length; i++) { if (SlotCodes[i] == m.mealSlot) { slot = i; break; }; }
 
-            int psrand1 = i * 90134017;
-            int psrand2 = i * 34257971;
-
-            int ci = psrand1 % 3;
-            int si = psrand2 % 3;
-            int di = ((psrand1%5 + psrand2%5) % 7);
-
-            var date = LocalDate.now().plusDays(di);
-            var slot = si;
-            var label = "CHICKEN";
-            var color = colors[ci];
-            meals.add(new CalendarMealView(date, slot, new SlotMealView(label, color)));
+            var label = m.description;
+            var color = Color.decode(m.backgroundColor);
+            mealViews.add(new CalendarMealView(date, slot, new SlotMealView(label, color)));
         }
-        return meals;
+        return mealViews;
     };
     boolean isSlotBooked(LocalDate date, int slot)
     {
