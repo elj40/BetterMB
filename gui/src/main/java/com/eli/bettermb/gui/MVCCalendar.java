@@ -28,7 +28,7 @@ class CellController
         this.view = view;
 
         view.onDayPressed(e -> calendarControl.onCellDayPressed(view.getDay()));
-        for (int i = 0; i < view.slots.length-1; i++)
+        for (int i = 0; i < view.slots.length; i++)
         {
             final int I = i;
             view.onSlotPressed(i, e -> calendarControl.onCellSlotPressed(I, view.getDay()));
