@@ -128,9 +128,13 @@ class LabelNumberSpinner extends LabelInput
     }
     String getText()
     {
-        return (String) numberField.getValue();
+        return Integer.toString(getValue());
     }
-    public void setValue(int v)
+    int getValue()
+    {
+        return (int) numberField.getValue();
+    }
+    void setValue(int v)
     {
         numberField.setValue(v);
     }

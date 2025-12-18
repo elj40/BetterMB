@@ -95,6 +95,6 @@ class BookFormController
         view.onSlotEnter(e ->  MControl.bookingSlotEntered(view.slotInput.getText()) );
         view.onFaclEnter(e ->  MControl.bookingFaclEntered(view.faclInput.getText()) );
         view.onOptnEnter(e ->  MControl.bookingOptnEntered(view.optnInput.getText()) );
-        view.onDaysEnter(e ->  MControl.bookingDaysEntered(view.daysInput.getText()) );
+        view.onDaysEnter(e ->  MControl.bookingDaysEntered(view.daysInput.getValue()) );
     }
 }

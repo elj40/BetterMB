@@ -9,11 +9,17 @@ import java.util.Date;
 import java.time.YearMonth;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
+import java.lang.IllegalArgumentException;
 
 import com.eli.bettermb.client.Meal;
+import com.eli.bettermb.client.MealBookingOptions;
 
 class MainView
     extends JPanel
@@ -50,6 +56,123 @@ class MainView
 }
 class MainModel
 {
+    List meals = new ArrayList<Meal>();
+    MealBookingOptions mealBookingOptions;
+    private boolean mboDateSet = false;
+    private boolean mboSlotSet = false;
+    private boolean mboFacilitySet = false;
+    private boolean mboOptionSet = false;
+    private boolean mboAheadSet = false;
+
+    private Map SlotCodeMap     = new HashMap<String, Character>();
+    private Map FacilityCodeMap = new HashMap<String, Integer>();
+    private Map OptionCodeMap   = new HashMap<String, Integer>();
+    // Session map should have exact, same keys. Consider merging into one map
+    private Map SessionCodeMap  = new HashMap<String, Integer>();
+
+    void startMealBooking()
+    {
+        mealBookingOptions = new MealBookingOptions();
+    }
+    void setMealBookingDate(String date)
+    {
+        //TODO setMealBookingDate: consider if date should be passed as LocalDate
+        mealBookingOptions.mealDate = date;
+        mboDateSet = true;
+        mboSlotSet = false;
+        mboFacilitySet = false;
+        mboOptionSet = false;
+        mboAheadSet = false;
+    }
+    void setMealBookingSlot(String slot)
+    {
+        if (!SlotCodeMap.containsKey(slot))
+            throw new IllegalArgumentException("No slot code for " + slot);
+        char slotCode = (char) SlotCodeMap.get(slot);
+        mealBookingOptions.mealSlot = slotCode;
+        mboSlotSet = true;
+        mboFacilitySet = false;
+    }
+    void setMealBookingFacility(String facility)
+    {
+        if (!FacilityCodeMap.containsKey(facility))
+            throw new IllegalArgumentException("No facility code for " + facility);
+        int facilityCode = (int) FacilityCodeMap.get(facility);
+        mealBookingOptions.mealFacility = facilityCode;
+        mboFacilitySet = true;
+        mboOptionSet = false;
+    }
+    void setMealBookingOption(String option)
+    {
+        if (!OptionCodeMap.containsKey(option))
+            throw new IllegalArgumentException("No Option code for " + option);
+        if (!SessionCodeMap.containsKey(option))
+            throw new IllegalArgumentException("No session code for " + option);
+        int optionCode = (int) OptionCodeMap.get(option);
+        int sessionCode = (int) SessionCodeMap.get(option);
+        mealBookingOptions.mealOption = optionCode;
+        mealBookingOptions.mealSession = sessionCode;
+        mboOptionSet = true;
+        mboAheadSet = false;
+    }
+    void setMealBookingAhead(int count)
+    {
+        if (count < 0) throw new IllegalArgumentException();
+        mealBookingOptions.advanceBookingDays = count;
+        mboAheadSet = true;
+    }
+    void endMealBooking() throws IllegalArgumentException
+    {
+        if (!mboDateSet) throw new IllegalArgumentException();
+        if (!mboSlotSet) throw new IllegalArgumentException();
+        if (!mboFacilitySet) throw new IllegalArgumentException();
+        if (!mboOptionSet) throw new IllegalArgumentException();
+        if (!mboAheadSet)
+        {
+            mealBookingOptions.advanceBookingDays = 0;
+            mboAheadSet = true;
+        }
+    }
+    String[] getAvailableMealSlots(String date)
+        throws DateTimeParseException
+    {
+        System.out.println("TODO: undummy getAvailableMealSlots");
+        date = date.trim();
+        LocalDate.parse(date); // Just to check the parsing
+
+        // TODO: slot codes should come from client
+        SlotCodeMap.clear();
+        SlotCodeMap.put("Breakfast", 'B');
+        SlotCodeMap.put("Lunch",     'L');
+        SlotCodeMap.put("Dinner",    'D');
+        // dummy client:
+        return new String[]{"", "Breakfast", "Lunch", "Dinner" };
+    }
+    String[] getAvailableMealFaclities(String slot)
+    {
+        System.out.println("TODO: undummy getAvailableMealFaclities");
+        FacilityCodeMap.clear();
+        FacilityCodeMap.put("Majuba", 0);
+        FacilityCodeMap.put("Minerva", 0);
+        FacilityCodeMap.put("Sagbreek", 0);
+        FacilityCodeMap.put("Huis ten Bosch", 0);
+        return new String[]{"", "Majuba", "Minerva", "Sagbreek", "Huis ten Bosch"};
+    }
+    String[] getAvailableMealOptions(String facility)
+    {
+        System.out.println("TODO: undummy getAvailableMealOptions");
+        OptionCodeMap.clear();
+        OptionCodeMap.put("Standard Meal", 0);
+        OptionCodeMap.put("Extra Protein", 0);
+        OptionCodeMap.put("Chicken option", 0);
+        OptionCodeMap.put("MajuGeel", 0);
+        SessionCodeMap.clear();
+        SessionCodeMap.put("Standard Meal", 0);
+        SessionCodeMap.put("Extra Protein", 0);
+        SessionCodeMap.put("Chicken option", 0);
+        SessionCodeMap.put("MajuGeel", 0);
+        return new String[]{"", "Standard Meal", "Extra Protein", "Chicken option", "MajuGeel"};
+    }
     List<CalendarMealView> getAllMealsToDisplay()
     {
         //Placeholder till we set up client
@@ -182,84 +305,81 @@ class MainController
             bookingSlotEntered(BFView.slotInput.getText());
         };
     }
-    void bookingDateEntered(String info)
+    void prepareRestOfBookingForm(LabelComboBox next, String[] options)
     {
-        if (suppressEvents) return;
-
-        // TODO: use model to see if it was valid
-        LabelComboBox next = BFView.slotInput;
-        // Use model to figure out what data to fill in the next field
-        String[] stubReceived= {"", "Breakfast", "Lunch", "Dinner" };
-
+        System.out.println("TODO: consider this to be a BookingFormView function");
         suppressEvents = true;
 
         BFView.disableInputsFrom(next);
         next.shouldListenerIgnore = true;
-        next.setItems(stubReceived);
+        next.setItems(options);
         next.setEnabled(true);
 
         suppressEvents=false;
-    };
-    void bookingSlotEntered(String info)
+    }
+    void bookingDateEntered(String date)
     {
         if (suppressEvents) return;
-        // TODO: use model to see if it was valid
+        model.startMealBooking();
+
+        String[] options;
+        try { options = model.getAvailableMealSlots(date); }
+        catch (Exception e) { e.printStackTrace(); return; }
+        model.setMealBookingDate(date);
+
+        LabelComboBox next = BFView.slotInput;
+        prepareRestOfBookingForm(next, options);
+    };
+    void bookingSlotEntered(String slot)
+    {
+        if (suppressEvents) return;
+
+        String[] options;
+        try { options = model.getAvailableMealFaclities(slot); }
+        catch (Exception e) { e.printStackTrace(); return; }
+        model.setMealBookingSlot(slot);
 
         String[] stubReceived= { "", "Huis Visser", "Majuba", "Minerva", "Dagbreek" };
 
-        LabelInput curr = BFView.slotInput;
         LabelComboBox next = BFView.faclInput;
-
-        suppressEvents = true;
-
-        BFView.disableInputsFrom(next);
-
-        next.shouldListenerIgnore = true;
-        next.setItems(stubReceived);
-        next.setEnabled(true);
-
-        suppressEvents=false;
+        prepareRestOfBookingForm(next, options);
     };
-    void bookingFaclEntered(String info)
+    void bookingFaclEntered(String facility)
     {
         if (suppressEvents) return;
+
+        String[] options;
+        try { options = model.getAvailableMealOptions(facility); }
+        catch (Exception e) { e.printStackTrace(); return; }
+        model.setMealBookingFacility(facility);
+
         String[] stubReceived= {"", "Standard Meal", "Extra Protein", "Halaal", "Vegetarian" };
 
         // TODO: use model to see if it was valid
-        LabelInput curr = BFView.faclInput;
         LabelComboBox next = BFView.optnInput;
-
-        suppressEvents = true;
-
-        BFView.disableInputsFrom(next);
-
-        next.shouldListenerIgnore = true;
-        next.setItems(stubReceived);
-        next.setEnabled(true);
-
-        suppressEvents=false;
+        prepareRestOfBookingForm(next, options);
     };
-    void bookingOptnEntered(String info)
+    void bookingOptnEntered(String option)
     {
         if (suppressEvents) return;
 
-        // TODO: use model to see if it was valid
-        LabelInput curr = BFView.optnInput;
+        try { model.setMealBookingOption(option); }
+        catch (IllegalArgumentException e) { e.printStackTrace(); }
+
         LabelNumberSpinner next = BFView.daysInput;
-        // Just ignore first action, this is action from setting combobox
-        suppressEvents=true;
-
-        next.shouldListenerIgnore = true;
-        next.setValue(0);
         next.setEnabled(true);
-
-        suppressEvents=false;
+        System.out.println("TODO: set book button to enabled");
     };
-    void bookingDaysEntered(String info)
+    void bookingDaysEntered(int days)
     {
-        // TODO: use model to see if it was valid
-        System.out.println("bookingDaysEntered: " + info);
-        // model.setDays(info)
-        // model.book()
+        try { model.setMealBookingAhead(days); }
+        catch (IllegalArgumentException e) { e.printStackTrace(); }
+        model.endMealBooking();
+        book();
     };
+
+    void book()
+    {
+        System.out.println("TODO: book");
+    }
 }
