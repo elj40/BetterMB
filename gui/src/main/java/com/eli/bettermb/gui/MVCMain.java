@@ -1,5 +1,9 @@
 package com.eli.bettermb.gui;
 
+import com.eli.bettermb.client.Meal;
+import com.eli.bettermb.client.MealBookingOptions;
+import com.eli.bettermb.client.MealBookingResponse;
+
 import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.*;
@@ -20,8 +24,6 @@ import java.util.Iterator;
 
 import java.lang.IllegalArgumentException;
 
-import com.eli.bettermb.client.Meal;
-import com.eli.bettermb.client.MealBookingOptions;
 
 class MainView
     extends JPanel
@@ -78,12 +80,12 @@ class MainModel
     {
         Iterator<Integer> random = (new Random()).ints().iterator();
         // Temporary stuff to set up for testing
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 50; i++)
         {
             Meal meal = new Meal();
             meal.canModify = ((random.next() % 2) == 0);
 
-            var time = LocalDateTime.now().plusDays(random.next()%7);
+            var time = LocalDateTime.now().plusDays(random.next()%40);
 
             meal.title = "Meal";
             meal.start = time.toString();
@@ -94,11 +96,53 @@ class MainModel
             meal.mealSlot = SlotCodes[java.lang.Math.abs(random.next()) % 3];
             meal.backgroundColor = "#123456";
             meal.borderColor = "#123456";
-            meal.id = random.next() % 10000000;
+            meal.id = java.lang.Math.abs(random.next() % 10000000);
             meals.add(meal);
         }
 
     }
+    List<MealBookingResponse> bookSync()
+    {
+        // responses = client.book(meals);
+
+        Iterator<Integer> random = (new Random()).ints().iterator();
+        List<MealBookingResponse> responses = new ArrayList<>();
+        for (int i = 0; i < mealBookingOptions.advanceBookingDays; i++)
+        {
+            Meal meal = new Meal();
+            meal.canModify = ((random.next() % 2) == 0);
+
+            var date = LocalDate.parse(mealBookingOptions.mealDate).plusDays(i);
+
+            meal.title = "Booked";
+            meal.start = date.toString();
+            meal.description = "Food";
+            meal.facility = "Majubs";
+            meal.mealTime = LocalDateTime.now().toString();
+            meal.mealCost = "R99.99";
+            meal.mealSlot = mealBookingOptions.mealSlot;
+            meal.backgroundColor = "#654321";
+            meal.borderColor = "#654321";
+            meal.id = java.lang.Math.abs(random.next() % 10000000);
+            meals.add(meal);
+
+            if (meal.canModify)
+            {
+                meals.add(meal);
+                var response = new MealBookingResponse();
+                response.bookingDate = meal.start;
+                response.bookingMessage = "success";
+                responses.add(response);
+            } else
+            {
+                var response = new MealBookingResponse();
+                response.bookingDate = meal.start;
+                response.bookingMessage = "failed for whatever reason";
+                responses.add(response);
+            }
+        }
+        return responses;
+    };
     void startMealBooking()
     {
         mealBookingOptions = new MealBookingOptions();
@@ -221,13 +265,28 @@ class MainModel
     };
     boolean isSlotBooked(LocalDate date, int slot)
     {
-        System.out.println("TODO: MainModel.isSlotBooked()");
-        return true;
+        String mealDate = date.toString();
+        char mealSlot = SlotCodes[slot];
+        for (Meal m: meals)
+        {
+            if (mealSlot != m.mealSlot) continue;
+            if (!m.start.startsWith(mealDate)) continue;
+            return true;
+        }
+        return false;
     }
     int getMealIDFromSlot(LocalDate date, int slot)
     {
-        System.out.println("TODO: MainModel.getMealIDFromSlot()");
-        return 1234567;
+        String mealDate = date.toString();
+        char mealSlot = SlotCodes[slot];
+        for (Meal m: meals)
+        {
+            if (mealSlot != m.mealSlot) continue;
+            if (!m.start.startsWith(mealDate)) continue;
+            return m.id;
+        }
+        throw new IllegalArgumentException(
+                "No meal found with slot="+mealSlot+" and date="+mealDate);
     }
 }
 class MainController
@@ -295,40 +354,59 @@ class MainController
     {
         view.sidebar.setActionsArea(panel);
     }
+    void setInfoArea(JPanel panel)
+    {
+        view.sidebar.setInfoArea(panel);
+    };
+    void setInfoAreaWithBookingResults(List<MealBookingResponse> responses)
+    {
+        JPanel responsePanel = JDebug.createDebugPanel();
+        responsePanel.setLayout(new BorderLayout());
+        responsePanel.add(new JLabel("Booking responses:"), BorderLayout.NORTH);
+        JTextArea ta = new JTextArea();
+        for (MealBookingResponse mbr : responses)
+        {
+            ta.append(String.format("[%1$s] %2$s\n", mbr.bookingDate, mbr.bookingMessage));
+        };
+        responsePanel.add(ta);
+        setInfoArea(responsePanel);
+    }
     void onCalendarDayPressed(LocalDate date)
     {
-        System.out.print("TODO: onCalendarDayPressed, ");
+        suppressEvents = true;
         BFView = new BookFormView(date);
         BFControl = new BookFormController(this, BFView);
         setActionsArea(BFView);
         bookingDateEntered(date.toString());
+        suppressEvents = false;
     }
     void onCalendarSlotPressed(LocalDate date, int slot)
     {
         // TODO: I dont wanna know which slot was selected
         // better to know which meal that slot represents (meal title, meal code or something)
         // ^--> I prefer slots now since I am going to let the model deal with that headache
-        System.out.print("TODO: onCalendarSlotPressed, ");
-        System.out.println(slot);
 
         if (model.isSlotBooked(date, slot))
         {
             int mealID = model.getMealIDFromSlot(date, slot);
+            System.out.println(mealID);
             setAndClearActionsArea(CFView);
             suppressEvents = true;
             CFView.inputID.setValue(Integer.toString(mealID));
             suppressEvents = false;
-        } else
+        }
+        else
         {
             onCalendarDayPressed(date);
             // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
-            BFView.slotInput.comboBox.setSelectedIndex(1+slot);
-            bookingSlotEntered(BFView.slotInput.getText());
+            // BFView.slotInput.comboBox.setSelectedIndex(slot);
+            // bookingSlotEntered(BFView.slotInput.getText());
         };
     }
     void prepareRestOfBookingForm(LabelComboBox next, String[] options)
     {
-        System.out.println("TODO: consider this to be a BookingFormView function");
+        // TODO: consider this to be a BookingFormView function
+        // Right now convenient to keep here because of suppressEvents
         suppressEvents = true;
 
         BFView.disableInputsFrom(next);
@@ -354,13 +432,12 @@ class MainController
     void bookingSlotEntered(String slot)
     {
         if (suppressEvents) return;
+        if (slot.isEmpty()) return;
 
         String[] options;
         try { options = model.getAvailableMealFaclities(slot); }
         catch (Exception e) { e.printStackTrace(); return; }
         model.setMealBookingSlot(slot);
-
-        String[] stubReceived= { "", "Huis Visser", "Majuba", "Minerva", "Dagbreek" };
 
         LabelComboBox next = BFView.faclInput;
         prepareRestOfBookingForm(next, options);
@@ -368,13 +445,12 @@ class MainController
     void bookingFaclEntered(String facility)
     {
         if (suppressEvents) return;
+        if (facility.isEmpty()) return;
 
         String[] options;
         try { options = model.getAvailableMealOptions(facility); }
         catch (Exception e) { e.printStackTrace(); return; }
         model.setMealBookingFacility(facility);
-
-        String[] stubReceived= {"", "Standard Meal", "Extra Protein", "Halaal", "Vegetarian" };
 
         // TODO: use model to see if it was valid
         LabelComboBox next = BFView.optnInput;
@@ -383,13 +459,14 @@ class MainController
     void bookingOptnEntered(String option)
     {
         if (suppressEvents) return;
+        if (option.isEmpty()) return;
 
         try { model.setMealBookingOption(option); }
         catch (IllegalArgumentException e) { e.printStackTrace(); }
 
         LabelNumberSpinner next = BFView.daysInput;
         next.setEnabled(true);
-        System.out.println("TODO: set book button to enabled");
+        BFView.bookButton.setEnabled(true);
     };
     void bookingDaysEntered(int days)
     {
@@ -398,9 +475,16 @@ class MainController
         model.endMealBooking();
         book();
     };
-
+    void bookingBookPressed()
+    {
+        model.endMealBooking();
+        book();
+    };
     void book()
     {
-        System.out.println("TODO: book");
+        List<MealBookingResponse> results = model.bookSync();
+        setInfoAreaWithBookingResults(results);
+        List<CalendarMealView> meals = model.getAllMealsToDisplay();
+        calControl.setCalendarMeals(meals);
     }
 }

@@ -66,6 +66,7 @@ class BookFormView
     void onFaclEnter(ActionListener listener) { faclInput.addActionListener(listener); };
     void onOptnEnter(ActionListener listener) { optnInput.addActionListener(listener); };
     void onDaysEnter(ActionListener listener) { daysInput.addActionListener(listener); };
+    void onBookPressed(ActionListener listener) { bookButton.addActionListener(listener); };
 
     void clearAllInputs()
     {
@@ -96,5 +97,6 @@ class BookFormController
         view.onFaclEnter(e ->  MControl.bookingFaclEntered(view.faclInput.getText()) );
         view.onOptnEnter(e ->  MControl.bookingOptnEntered(view.optnInput.getText()) );
         view.onDaysEnter(e ->  MControl.bookingDaysEntered(view.daysInput.getValue()) );
+        view.onBookPressed(e ->  MControl.bookingBookPressed() );
     }
 }

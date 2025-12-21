@@ -203,8 +203,10 @@ class CalendarController
     {
         for (CalendarMealView meal : meals)
         {
+            LocalDate mealDate = meal.date();
+            if (mealDate.getMonthValue() != currentMonth.getMonthValue()) continue;
             //TODO: check that date is valid
-            int index = meal.date().getDayOfMonth()-1;
+            int index = mealDate.getDayOfMonth()-1;
             cells[index]
                 .setSlotDisplay(meal.slot(), meal.slotMealView());
         }

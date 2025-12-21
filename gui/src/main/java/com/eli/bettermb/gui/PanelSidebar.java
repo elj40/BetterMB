@@ -10,6 +10,7 @@ import java.util.ArrayList;
 class SidebarView extends JPanel
 {
     JPanel actionsArea  = new JPanel();
+    JPanel infoArea     = new JPanel();
     JButton aboutButton = new JButton("ABOUT");
     JButton homeButton  = new JButton("HOME");
     SidebarView() {
@@ -24,8 +25,16 @@ class SidebarView extends JPanel
         }
         add(pages, BorderLayout.NORTH);
 
+        add(infoArea,    BorderLayout.CENTER);
         add(actionsArea, BorderLayout.SOUTH);
     }
+    void setInfoArea(JPanel panel)
+    {
+        infoArea.removeAll();
+        infoArea.add(panel);
+        infoArea.revalidate();
+        infoArea.repaint();
+    };
     void setActionsArea(JPanel actionsAreaView)
     {
         actionsArea.removeAll();
