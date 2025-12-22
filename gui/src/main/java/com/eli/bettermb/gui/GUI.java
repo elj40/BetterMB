@@ -42,7 +42,7 @@ public class GUI
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
 
         MainView view = new MainView();
-        MainModel model = new MainModel();
+        MainModel model = new MainModel(new StubClient());
         MainController controller = new MainController(view, model);
 
         frame.add(view);
