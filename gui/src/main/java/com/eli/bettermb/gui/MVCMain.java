@@ -80,71 +80,23 @@ class MainModel
     MainModel(AbstractClient client)
     {
         this.client = client;
-        Iterator<Integer> random = (new Random()).ints().iterator();
-        // Temporary stuff to set up for testing
-        for (int i = 0; i < 50; i++)
-        {
-            Meal meal = new Meal();
-            meal.canModify = ((random.next() % 2) == 0);
-
-            var time = LocalDateTime.now().plusDays(random.next()%40);
-
-            meal.title = "Meal";
-            meal.start = time.toString();
-            meal.description = "Food";
-            meal.facility = "Majubs";
-            meal.mealTime = time.toLocalTime().toString();
-            meal.mealCost = "R99.99";
-            meal.mealSlot = SlotCodes[java.lang.Math.abs(random.next()) % 3];
-            meal.backgroundColor = "#123456";
-            meal.borderColor = "#123456";
-            meal.id = java.lang.Math.abs(random.next() % 10000000);
-            meals.add(meal);
-        }
+        try { meals = client.getMealsBookedInMonth(LocalDate.now().toString()); }
+        catch (IOException e) { e.printStackTrace(); }
     }
 
     List<MealBookingResponse> bookSync()
         throws IOException
     {
-        return client.book(mealBookingOptions);
-        // Iterator<Integer> random = (new Random()).ints().iterator();
-        // List<MealBookingResponse> responses = new ArrayList<>();
-        // for (int i = 0; i < mealBookingOptions.advanceBookingDays; i++)
-        // {
-        //     Meal meal = new Meal();
-        //     meal.canModify = ((random.next() % 2) == 0);
-
-        //     var date = LocalDate.parse(mealBookingOptions.mealDate).plusDays(i);
-        //     var datetime = LocalDateTime.of(date, LocalTime.now()).withNano(0);
-
-        //     meal.title = "Booked";
-        //     meal.start = datetime.toString();
-        //     meal.description = "Food";
-        //     meal.facility = "Majubs";
-        //     meal.mealTime = datetime.toLocalTime().toString();
-        //     meal.mealCost = "R99.99";
-        //     meal.mealSlot = mealBookingOptions.mealSlot;
-        //     meal.backgroundColor = "#654321";
-        //     meal.borderColor = "#654321";
-        //     meal.id = java.lang.Math.abs(random.next() % 10000000);
-
-        //     if (meal.canModify)
-        //     {
-        //         meals.add(meal);
-        //         var response = new MealBookingResponse();
-        //         response.bookingDate = meal.start;
-        //         response.bookingMessage = "success";
-        //         responses.add(response);
-        //     } else
-        //     {
-        //         var response = new MealBookingResponse();
-        //         response.bookingDate = meal.start;
-        //         response.bookingMessage = "failed for whatever reason";
-        //         responses.add(response);
-        //     }
-        // }
-        // return responses;
+        List<MealBookingResponse> responses = client.book(mealBookingOptions);
+        List<Meal> newMeals = client.getMealsBookedInMonth(mealBookingOptions.mealDate);
+        meals.addAll(newMeals);
+        return responses;
     };
+
+    MealCancelResponse cancel(int id) throws IOException
+    {
+        return client.cancel(id);
+    }
 
     void startMealBooking()
     {
@@ -219,7 +171,6 @@ class MainModel
     String[] getAvailableMealSlots(String date)
         throws DateTimeParseException
     {
-        System.out.println("TODO: undummy getAvailableMealSlots");
         date = date.trim();
         LocalDate.parse(date); // Just to check the parsing
 
@@ -231,6 +182,7 @@ class MainModel
         }
 
         List<String> descriptions = new ArrayList<>();
+        descriptions.add("");
         SlotCodeMap.clear();
         for (MealSlot slot : slots)
         {
@@ -256,6 +208,7 @@ class MainModel
 
         FacilityCodeMap.clear();
         List<String> descriptions = new ArrayList<>();
+        descriptions.add("");
         for (MealFacility facility : facilites)
         {
             FacilityCodeMap.put(facility.description, facility.code);
@@ -282,6 +235,7 @@ class MainModel
         OptionCodeMap.clear();
         SessionCodeMap.clear();
         List<String> descriptions = new ArrayList<>();
+        descriptions.add("");
         for (MealOption option : options)
         {
             OptionCodeMap.put(option.description, option.code);
@@ -290,7 +244,7 @@ class MainModel
         }
         return descriptions.toArray(new String[0]);
     }
-    List<CalendarMealView> getAllMealsToDisplay()
+    List<CalendarMealView> getAllMealViews()
     {
         //Placeholder till we set up client
         var mealViews = new ArrayList<CalendarMealView>();
@@ -355,8 +309,7 @@ class MainController
         this.view = view;
         calControl = new CalendarController(this, view.calendar);
 
-        List<CalendarMealView> meals = model.getAllMealsToDisplay();
-        calControl.setCalendarMeals(meals);
+        setMonth(YearMonth.now());
 
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
         this.view.sidebar.onGoToHome(e -> onGoToHome());
@@ -367,7 +320,7 @@ class MainController
     void setMonth(YearMonth month)
     {
         // TODO: this should be per month
-        List<CalendarMealView> meals = model.getAllMealsToDisplay();
+        List<CalendarMealView> meals = model.getAllMealViews();
         calControl.setMonth(month);
         calControl.setCalendarMeals(meals);
     }
@@ -384,10 +337,6 @@ class MainController
         // Probably will need to do some model stuff here once we use the client
         view.setContent(view.calendar);
     }
-    void cancelMeal(String id)
-    {
-        System.out.println("[STUB] cancel meal " + id);
-    }
     void setAndClearActionsArea(FormView panel)
     {
         suppressEvents = true;
@@ -403,12 +352,24 @@ class MainController
     {
         view.sidebar.setInfoArea(panel);
     };
+    void setInfoAreaWithCancelResults(MealCancelResponse mcr)
+    {
+        JPanel responsePanel = JDebug.createDebugPanel();
+        responsePanel.setLayout(new BorderLayout());
+        responsePanel.add(new JLabel("Cancel response:"), BorderLayout.NORTH);
+        JTextArea ta = new JTextArea();
+        ta.setEditable(false);
+        ta.append(mcr.cliDisplayString());
+        responsePanel.add(ta);
+        setInfoArea(responsePanel);
+    }
     void setInfoAreaWithBookingResults(List<MealBookingResponse> responses)
     {
         JPanel responsePanel = JDebug.createDebugPanel();
         responsePanel.setLayout(new BorderLayout());
         responsePanel.add(new JLabel("Booking responses:"), BorderLayout.NORTH);
         JTextArea ta = new JTextArea();
+        ta.setEditable(false);
         for (MealBookingResponse mbr : responses)
         {
             ta.append(String.format("[%1$s] %2$s\n", mbr.bookingDate, mbr.bookingMessage));
@@ -461,6 +422,7 @@ class MainController
 
         suppressEvents=false;
     }
+
     void bookingDateEntered(String date)
     {
         if (suppressEvents) return;
@@ -474,6 +436,7 @@ class MainController
         LabelComboBox next = BFView.slotInput;
         prepareRestOfBookingForm(next, options);
     };
+
     void bookingSlotEntered(String slot)
     {
         if (suppressEvents) return;
@@ -487,6 +450,7 @@ class MainController
         LabelComboBox next = BFView.faclInput;
         prepareRestOfBookingForm(next, options);
     };
+
     void bookingFaclEntered(String facility)
     {
         if (suppressEvents) return;
@@ -501,6 +465,7 @@ class MainController
         LabelComboBox next = BFView.optnInput;
         prepareRestOfBookingForm(next, options);
     };
+
     void bookingOptnEntered(String option)
     {
         if (suppressEvents) return;
@@ -513,6 +478,7 @@ class MainController
         next.setEnabled(true);
         BFView.bookButton.setEnabled(true);
     };
+
     void bookingDaysEntered(int days)
     {
         try { model.setMealBookingAhead(days); }
@@ -522,6 +488,10 @@ class MainController
     };
     void bookingBookPressed()
     {
+        int days = BFView.daysInput.getValue();
+        try { model.setMealBookingAhead(days); }
+        catch (IllegalArgumentException e) { e.printStackTrace(); }
+        // TODO: need to set the advancebooking days here as well
         model.endMealBooking();
         book();
     };
@@ -532,7 +502,17 @@ class MainController
         catch (IOException e) { e.printStackTrace(); };
 
         setInfoAreaWithBookingResults(results);
-        List<CalendarMealView> meals = model.getAllMealsToDisplay();
+        List<CalendarMealView> meals = model.getAllMealViews();
+        calControl.setCalendarMeals(meals);
+    }
+    void cancel(String id)
+    {
+        MealCancelResponse mcr = new MealCancelResponse();
+        try { mcr = model.cancel(Integer.parseInt(id)); } // Make sure it is a valid int
+        catch (IOException e) { e.printStackTrace(); };
+        setInfoAreaWithCancelResults(mcr);
+
+        List<CalendarMealView> meals = model.getAllMealViews();
         calControl.setCalendarMeals(meals);
     }
 }
