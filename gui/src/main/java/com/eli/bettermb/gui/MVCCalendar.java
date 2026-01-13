@@ -199,8 +199,18 @@ class CalendarController
         currentMonth = month;
         attachCellControllersToViews();
     }
+    void clearCalendarMeals()
+    {
+        for (int i = 0; i < monthView.monthLength; i++)
+        {
+            cells[i].setSlotDisplay(0, new SlotMealView("", Color.WHITE));
+            cells[i].setSlotDisplay(1, new SlotMealView("", Color.WHITE));
+            cells[i].setSlotDisplay(2, new SlotMealView("", Color.WHITE));
+        }
+    }
     void setCalendarMeals(List<CalendarMealView> meals)
     {
+        clearCalendarMeals();
         for (CalendarMealView meal : meals)
         {
             LocalDate mealDate = meal.date();

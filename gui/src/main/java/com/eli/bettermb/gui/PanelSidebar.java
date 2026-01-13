@@ -28,7 +28,7 @@ class SidebarView extends JPanel
         add(infoArea,    BorderLayout.CENTER);
         add(actionsArea, BorderLayout.SOUTH);
     }
-    void setInfoArea(JPanel panel)
+    void setInfoArea(JScrollPane panel)
     {
         infoArea.removeAll();
         infoArea.add(panel);

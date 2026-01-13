@@ -20,10 +20,12 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 import java.lang.IllegalArgumentException;
 import java.io.IOException;
 
+record ExpectedOptionsResult(int index, String[] options) {};
 
 class MainView
     extends JPanel
@@ -41,12 +43,10 @@ class MainView
         content = new JPanel();
         content.setLayout(new BorderLayout());
 
-        header = new PanelHeader("BetterMB-GUI", "28178564");
         sidebar = new SidebarView();
 
         content.add(calendar, BorderLayout.CENTER);
 
-        add(header, BorderLayout.NORTH);
         add(sidebar, BorderLayout.WEST);
         add(content, BorderLayout.CENTER);
     }
@@ -58,9 +58,12 @@ class MainView
         content.repaint();
     }
 }
+record BookAsyncResult(
+        List<MealBookingResponse> responses,
+        CompletableFuture<List<Meal>> futureMeals) {};
 class MainModel
 {
-    AbstractClient client;
+    Client client;
     List<Meal> meals = new ArrayList<>();
     MealBookingOptions mealBookingOptions;
     private boolean mboDateSet = false;
@@ -76,8 +79,9 @@ class MainModel
     private Map SessionCodeMap  = new HashMap<String, Integer>();
 
     final char[] SlotCodes = {'B', 'L', 'D'};
+    final String[] SlotDescriptions = {"Breakfast", "Lunch", "Dinner"};
 
-    MainModel(AbstractClient client)
+    MainModel(Client client)
     {
         this.client = client;
         try { meals = client.getMealsBookedInMonth(LocalDate.now().toString()); }
@@ -93,9 +97,37 @@ class MainModel
         return responses;
     };
 
+    BookAsyncResult bookAsync()
+    {
+        List<MealBookingResponse> responses = new ArrayList<>();
+        try { responses= client.book(mealBookingOptions); }
+        catch (Exception e) { e.printStackTrace(); };
+        //List<Meal> newMeals = client.getMealsBookedInMonth(mealBookingOptions.mealDate);
+        CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(mealBookingOptions.mealDate);
+        return new BookAsyncResult(responses, futureMeals);
+    };
+
     MealCancelResponse cancel(int id) throws IOException
     {
-        return client.cancel(id);
+        MealCancelResponse mcr = client.cancel(id);
+        if (mcr.success) removeMealByID(id);
+        return mcr;
+    }
+
+    void removeMealByID(int id)
+    {
+        // Removes meal from the local memory,
+        // does nothing if meal already was not in local memory
+        Meal toRemove = null;
+        for (Meal m: meals)
+        {
+            if (m.id == id)
+            {
+                toRemove = m;
+                break;
+            }
+        }
+        if (toRemove != null) meals.remove(toRemove);
     }
 
     void startMealBooking()
@@ -168,13 +200,31 @@ class MainModel
         }
     }
 
+    ExpectedOptionsResult getExpectedSlots(LocalDate date, int slot)
+    {
+        List<String> options = new ArrayList<>();
+        int index = 0;
+        for (int i = 0; i < SlotCodes.length; i++)
+        {
+            if (!isSlotBooked(date,slot))
+            {
+                if (SlotDescriptions[slot].equals(SlotDescriptions[i])) index = options.size();
+                options.add(SlotDescriptions[i]);
+            }
+        }
+        return new ExpectedOptionsResult(index, options.toArray(new String[0]));
+    };
+
     String[] getAvailableMealSlots(String date)
         throws DateTimeParseException
     {
         date = date.trim();
         LocalDate.parse(date); // Just to check the parsing
 
-        List<MealSlot> slots = client.getAvailableMealSlots(date);
+        List<MealSlot> slots = new ArrayList<>();
+        try { slots = client.getAvailableMealSlots(date); }
+        catch (Exception e) { e.printStackTrace(); }
+
         if (slots == null)
         {
             //TODO: throw an exception that tells view to show user that it failed
@@ -199,7 +249,10 @@ class MainModel
 
         String date = mealBookingOptions.mealDate;
         char   slot = (char) SlotCodeMap.get(slotDescription);
-        List<MealFacility> facilites = client.getAvailableMealFacilities(date, slot);
+        List<MealFacility> facilites = new ArrayList<>();
+        try { facilites = client.getAvailableMealFacilities(date, slot); }
+        catch (Exception e) { e.printStackTrace(); }
+
         if (facilites == null)
         {
             //TODO: throw an exception that tells view to show user that it failed
@@ -261,6 +314,7 @@ class MainModel
         }
         return mealViews;
     };
+
     boolean isSlotBooked(LocalDate date, int slot)
     {
         String mealDate = date.toString();
@@ -273,6 +327,7 @@ class MainModel
         }
         return false;
     }
+
     int getMealIDFromSlot(LocalDate date, int slot)
     {
         String mealDate = date.toString();
@@ -286,11 +341,12 @@ class MainModel
         throw new IllegalArgumentException(
                 "No meal found with slot="+mealSlot+" and date="+mealDate);
     }
+
 }
 class MainController
 {
-    MainView view = new MainView();
-    MainModel model = new MainModel(new StubClient());
+    MainView view;
+    MainModel model;
 
     DefaultFormView DFView = new DefaultFormView();
     DefaultFormController DFControl = new DefaultFormController(this, DFView);
@@ -307,6 +363,7 @@ class MainController
     MainController(MainView view, MainModel model)
     {
         this.view = view;
+        this.model = model;
         calControl = new CalendarController(this, view.calendar);
 
         setMonth(YearMonth.now());
@@ -348,7 +405,7 @@ class MainController
     {
         view.sidebar.setActionsArea(panel);
     }
-    void setInfoArea(JPanel panel)
+    void setInfoArea(JScrollPane panel)
     {
         view.sidebar.setInfoArea(panel);
     };
@@ -360,8 +417,10 @@ class MainController
         JTextArea ta = new JTextArea();
         ta.setEditable(false);
         ta.append(mcr.cliDisplayString());
-        responsePanel.add(ta);
-        setInfoArea(responsePanel);
+
+        JScrollPane scrollPane = new JScrollPane(ta);
+        responsePanel.add(scrollPane);
+        setInfoArea(scrollPane);
     }
     void setInfoAreaWithBookingResults(List<MealBookingResponse> responses)
     {
@@ -374,8 +433,11 @@ class MainController
         {
             ta.append(String.format("[%1$s] %2$s\n", mbr.bookingDate, mbr.bookingMessage));
         };
+
         responsePanel.add(ta);
-        setInfoArea(responsePanel);
+        JScrollPane scrollPane = new JScrollPane(responsePanel);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        setInfoArea(scrollPane);
     }
     void onCalendarDayPressed(LocalDate date)
     {
@@ -383,19 +445,17 @@ class MainController
         BFView = new BookFormView(date);
         BFControl = new BookFormController(this, BFView);
         setActionsArea(BFView);
-        bookingDateEntered(date.toString());
         suppressEvents = false;
+        bookingDateEntered(date.toString());
     }
     void onCalendarSlotPressed(LocalDate date, int slot)
     {
-        // TODO: I dont wanna know which slot was selected
         // better to know which meal that slot represents (meal title, meal code or something)
         // ^--> I prefer slots now since I am going to let the model deal with that headache
 
         if (model.isSlotBooked(date, slot))
         {
             int mealID = model.getMealIDFromSlot(date, slot);
-            System.out.println(mealID);
             setAndClearActionsArea(CFView);
             suppressEvents = true;
             CFView.inputID.setValue(Integer.toString(mealID));
@@ -404,9 +464,16 @@ class MainController
         else
         {
             onCalendarDayPressed(date);
-            // TODO: this should come from models expected slots (actual slots gets loaded and then gets double checked)
-            // BFView.slotInput.comboBox.setSelectedIndex(slot);
-            // bookingSlotEntered(BFView.slotInput.getText());
+            ExpectedOptionsResult expected = model.getExpectedSlots(date, slot);
+            suppressEvents = true;
+            BFView.slotInput.setItems(expected.options());
+            suppressEvents = false;
+            BFView.slotInput.setSelectedIndex(expected.index());
+
+            CompletableFuture validateFuture = CompletableFuture.runAsync(
+                    () -> { System.out.println("TODO: async check expected slots."); });
+            try { validateFuture.get(); }
+            catch (Exception e) { e.printStackTrace(); };
         };
     }
     void prepareRestOfBookingForm(LabelComboBox next, String[] options)
@@ -498,12 +565,19 @@ class MainController
     void book()
     {
         List<MealBookingResponse> results = new ArrayList<>();
-        try { results = model.bookSync(); }
-        catch (IOException e) { e.printStackTrace(); };
+        //try { results = model.bookSync(); }
+        //catch (IOException e) { e.printStackTrace(); };
+        BookAsyncResult bar = model.bookAsync();
 
-        setInfoAreaWithBookingResults(results);
-        List<CalendarMealView> meals = model.getAllMealViews();
-        calControl.setCalendarMeals(meals);
+        setInfoAreaWithBookingResults(bar.responses());
+
+        bar.futureMeals().thenAccept(result -> {
+            if (result == null) return;
+            model.meals.addAll(result);
+            List<CalendarMealView> meals = model.getAllMealViews();
+            calControl.setCalendarMeals(meals);
+            System.out.println("Second");
+        });
     }
     void cancel(String id)
     {

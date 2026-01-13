@@ -39,6 +39,10 @@ class LabelComboBox extends LabelInput
     {
         return (String) comboBox.getSelectedItem();
     }
+    void setSelectedIndex(int index)
+    {
+        comboBox.setSelectedIndex(index);
+    }
     public void setItems(String[] items)
     {
         comboBox.removeAllItems();
@@ -57,6 +61,11 @@ class LabelComboBox extends LabelInput
         comboBox.setEnabled(enabled);
         button.setEnabled(enabled);
     }
+    void clear()
+    {
+        comboBox.removeAllItems();
+    }
+
     void addActionListener(ActionListener a)
     {
         comboBox.addActionListener(a);
@@ -66,10 +75,6 @@ class LabelComboBox extends LabelInput
     {
         comboBox.removeActionListener(a);
         button.removeActionListener(a);
-    }
-    void clear()
-    {
-        comboBox.removeAllItems();
     }
 }
 

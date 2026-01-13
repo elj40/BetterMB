@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 // TODO: quota stuff
+// TODO: Should extract hard-coded links out
 public class Client
 {
     public static boolean debugging = true;
