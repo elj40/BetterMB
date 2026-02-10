@@ -13,6 +13,7 @@ import java.time.DayOfWeek;
 import java.time.YearMonth;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 
 import com.eli.bettermb.client.Meal;
@@ -57,6 +58,7 @@ class CellView extends JPanel{
         for (int i = 0; i < slots.length; i++)
         {
             slots[i] = new JButton();
+            slots[i].setAlignmentX(LEFT_ALIGNMENT);
             add(slots[i]);
         }
     }
@@ -65,6 +67,7 @@ class CellView extends JPanel{
         JButton s = slots[slot];
         s.setLabel(mv.label());
         s.setBackground(mv.color());
+        s.setAlignmentX(LEFT_ALIGNMENT);
     }
     int getDay()
     {
@@ -104,11 +107,15 @@ class CalendarHeaderView extends JPanel {
     public JLabel month = new JLabel();
     public JButton next = new JButton("->");
     public JButton prev = new JButton("<-");
+
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("LLLL yyyy");
     CalendarHeaderView() {
         JDebug.addDebugFeatures(this);
         setLayout(new BorderLayout());
 
         add(today, BorderLayout.WEST);
+
+        month.setHorizontalAlignment(SwingConstants.CENTER);
         add(month, BorderLayout.CENTER);
 
         JPanel arrows = JDebug.createDebugPanel();
@@ -119,7 +126,7 @@ class CalendarHeaderView extends JPanel {
     }
     void setMonth(YearMonth month)
     {
-        this.month.setText(month.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, Locale.UK));
+        this.month.setText(month.format(dateFormatter));
     }
     void onTodayPressed(ActionListener listener) { today.addActionListener(listener); }
     void onPrevPressed(ActionListener listener) { prev.addActionListener(listener); }
@@ -214,8 +221,8 @@ class CalendarController
         for (CalendarMealView meal : meals)
         {
             LocalDate mealDate = meal.date();
-            if (mealDate.getMonthValue() != currentMonth.getMonthValue()) continue;
-            //TODO: check that date is valid
+            YearMonth mealMonth = YearMonth.of(mealDate.getYear(), mealDate.getMonth());
+            if (!mealMonth.equals(currentMonth)) continue;
             int index = mealDate.getDayOfMonth()-1;
             cells[index]
                 .setSlotDisplay(meal.slot(), meal.slotMealView());

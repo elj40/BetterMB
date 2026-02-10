@@ -9,18 +9,18 @@ import javax.swing.text.*;
 class CancelFormView
     extends FormView
 {
-    LabelFormatText inputID;
+    LabelText inputID;
     JButton backButton = new JButton("Back");
     CancelFormView()
     {
         setLayout(new GridLayout(0,1));
 
-        MaskFormatter fmt = new MaskFormatter();
-        try { fmt.setMask("#######"); }
-        catch (Exception e) { e.printStackTrace(); }
-        fmt.setPlaceholderCharacter('＿');
+        //MaskFormatter fmt = new MaskFormatter();
+        //try { fmt.setMask("#######"); }
+        //catch (Exception e) { e.printStackTrace(); }
+        //fmt.setPlaceholderCharacter('＿');
 
-        inputID = new LabelFormatText("[Cancel] Enter meal ID:", ">", fmt);
+        inputID = new LabelText("[Cancel] Enter meal ID:", ">");
         add(inputID);
 
         add(backButton);

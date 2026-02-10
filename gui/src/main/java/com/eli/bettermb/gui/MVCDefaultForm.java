@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+import java.time.LocalDate;
+
 abstract class FormView
     extends JPanel
 {
@@ -14,11 +16,15 @@ class DefaultFormView
 {
     JButton bookButton = new JButton("BOOK MEAL");
     JButton cancelButton = new JButton("CANCEL MEAL");
+    JButton signinButton = new JButton("SIGN IN");
+    JButton reloadButton = new JButton("RELOAD");
     DefaultFormView()
     {
         setLayout(new GridLayout(0, 1));
         add(bookButton);
         add(cancelButton);
+        add(signinButton);
+        add(reloadButton);
     }
     void onBookButtonPressed(ActionListener listener)
     {
@@ -27,6 +33,14 @@ class DefaultFormView
     void onCancelButtonPressed(ActionListener listener)
     {
         cancelButton.addActionListener(listener);
+    }
+    void onSignInButtonPressed(ActionListener listener)
+    {
+        signinButton.addActionListener(listener);
+    }
+    void onReloadButtonPressed(ActionListener listener)
+    {
+        reloadButton.addActionListener(listener);
     }
     void clearAllInputs() {};
 }
@@ -37,5 +51,7 @@ class DefaultFormController
     {
         view.onCancelButtonPressed(e -> MControl.setAndClearActionsArea(MControl.CFView));
         view.onBookButtonPressed(e -> MControl.setAndClearActionsArea(MControl.BFView));
+        view.onSignInButtonPressed(e -> MControl.signIn(MControl.model.sun_entry_url, MControl.model.sun_target_url));
+        view.onReloadButtonPressed(e -> MControl.tryGetMealsBookedInMonth(LocalDate.now().toString()));
     }
 }

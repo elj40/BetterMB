@@ -1,5 +1,6 @@
 " This vim file is just to make this project a little nicer to code
 set noautochdir
+set nowrap
 inoremap print System.out.println
 
 let g:netrw_liststyle = 3

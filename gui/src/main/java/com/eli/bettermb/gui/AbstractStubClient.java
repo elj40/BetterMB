@@ -4,6 +4,7 @@ import com.eli.bettermb.client.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -246,9 +247,18 @@ class StubBookHttpClient implements IHttpClient
         }
         else if (uri.contains("booking/"))
         {
-            this.setResponseFromString(200, "[ " +
-                    "{\"bookingDate\":\"2025-01-01\" ,\"bookingMessage\":\"Reservation already exists\"}" +
-                    " ]");
+            String responseString = "[ ";
+            for (int i = 0; i <= 8; i++)
+            {
+                String bookingDate = LocalDate
+                    .now()
+                    .plusDays(i)
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                if (i > 0) responseString += ", ";
+                responseString += "{\"bookingDate\":" + bookingDate + " ,\"bookingMessage\":\"Booking successful\"}";
+            };
+            responseString += " ]";
+            this.setResponseFromString(200, responseString);
         }
 
         return response;

@@ -35,6 +35,7 @@ class MainView
 
     JPanel content;
     CalendarView calendar = new CalendarView();
+    SettingsView settings = new SettingsView();
 
     MainView()
     {
@@ -58,12 +59,16 @@ class MainView
         content.repaint();
     }
 }
+
 record BookAsyncResult(
         List<MealBookingResponse> responses,
         CompletableFuture<List<Meal>> futureMeals) {};
+
 class MainModel
 {
     Client client;
+    SettingsModel settings = new SettingsModel();
+
     List<Meal> meals = new ArrayList<>();
     MealBookingOptions mealBookingOptions;
     private boolean mboDateSet = false;
@@ -81,10 +86,20 @@ class MainModel
     final char[] SlotCodes = {'B', 'L', 'D'};
     final String[] SlotDescriptions = {"Breakfast", "Lunch", "Dinner"};
 
+    final String sun_url = "https://web-apps.sun.ac.za";
+    final String mysun_link = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
+    final String sun_entry_url = mysun_link;
+    final String sun_target_url = sun_url;
+
     MainModel(Client client)
     {
         this.client = client;
-        try { meals = client.getMealsBookedInMonth(LocalDate.now().toString()); }
+        tryGetMealsBookedInMonth(LocalDate.now().toString());
+    }
+
+    void tryGetMealsBookedInMonth(String date)
+    {
+        try { meals = client.getMealsBookedInMonth(date); }
         catch (IOException e) { e.printStackTrace(); }
     }
 
@@ -266,6 +281,7 @@ class MainModel
         {
             FacilityCodeMap.put(facility.description, facility.code);
             descriptions.add(facility.description);
+            System.out.println(facility.description + ": " + Integer.toString(facility.code));
         }
         return descriptions.toArray(new String[0]);
     }
@@ -294,6 +310,7 @@ class MainModel
             OptionCodeMap.put(option.description, option.code);
             SessionCodeMap.put(option.description, option.sessionId);
             descriptions.add(option.description);
+            System.out.println(option.description + ": " + Integer.toString(option.code));
         }
         return descriptions.toArray(new String[0]);
     }
@@ -348,6 +365,9 @@ class MainController
     MainView view;
     MainModel model;
 
+    SettingsModel settingsModel = new SettingsModel();
+    SettingsView settingsView = new SettingsView();
+
     DefaultFormView DFView = new DefaultFormView();
     DefaultFormController DFControl = new DefaultFormController(this, DFView);
 
@@ -370,8 +390,34 @@ class MainController
 
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
         this.view.sidebar.onGoToHome(e -> onGoToHome());
+        this.view.sidebar.onGoToSettings(e -> onGoToSettings());
 
         this.view.sidebar.setActionsArea(DFView);
+    }
+
+    // TODO: clean up, this has bad practices
+    void signIn(String signin_entry, String signin_target)
+    {
+        String cookies = null;
+        if (!Client.debugging) // TODO: remove this horrid code
+        {
+            try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
+            catch (Exception ex)
+            {
+                System.out.println("[signin] Failed to sign in");
+                return;
+            }
+            model.client.setCookies(cookies);
+            System.out.println(cookies);
+        }
+        settingsModel.cookies = cookies;
+        settingsView.cookiesInput.setText(settingsModel.cookies);
+    }
+
+    void tryGetMealsBookedInMonth(String date)
+    {
+        model.tryGetMealsBookedInMonth(date);
+        setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
     }
 
     void setMonth(YearMonth month)
@@ -389,6 +435,10 @@ class MainController
         about.add(new JLabel("ABOUT"));
         view.setContent(about);
     }
+    void onGoToSettings()
+    {
+        view.setContent(settingsView);
+    }
     void onGoToHome()
     {
         // Probably will need to do some model stuff here once we use the client
@@ -405,7 +455,7 @@ class MainController
     {
         view.sidebar.setActionsArea(panel);
     }
-    void setInfoArea(JScrollPane panel)
+    void setInfoArea(JPanel panel)
     {
         view.sidebar.setInfoArea(panel);
     };
@@ -420,7 +470,7 @@ class MainController
 
         JScrollPane scrollPane = new JScrollPane(ta);
         responsePanel.add(scrollPane);
-        setInfoArea(scrollPane);
+        //setInfoArea(scrollPane);
     }
     void setInfoAreaWithBookingResults(List<MealBookingResponse> responses)
     {
@@ -437,7 +487,7 @@ class MainController
         responsePanel.add(ta);
         JScrollPane scrollPane = new JScrollPane(responsePanel);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        setInfoArea(scrollPane);
+        setInfoArea(responsePanel);
     }
     void onCalendarDayPressed(LocalDate date)
     {
@@ -524,9 +574,9 @@ class MainController
         if (facility.isEmpty()) return;
 
         String[] options;
+        model.setMealBookingFacility(facility);
         try { options = model.getAvailableMealOptions(facility); }
         catch (Exception e) { e.printStackTrace(); return; }
-        model.setMealBookingFacility(facility);
 
         // TODO: use model to see if it was valid
         LabelComboBox next = BFView.optnInput;

@@ -78,6 +78,43 @@ class LabelComboBox extends LabelInput
     }
 }
 
+class LabelText extends LabelInput
+{
+    JTextField textField = new JTextField();
+
+    LabelText(String label_str, String button_label)
+    {
+        super(label_str, button_label);
+        add(textField, BorderLayout.CENTER);
+    }
+    String getText()
+    {
+        return textField.getText();
+    }
+    public void setEnabled(boolean enabled)
+    {
+        textField.setEnabled(enabled);
+        button.setEnabled(enabled);
+    }
+    void addActionListener(ActionListener a)
+    {
+        textField.addActionListener(a);
+        button.addActionListener(a);
+    }
+    void removeActionListener(ActionListener a)
+    {
+        textField.removeActionListener(a);
+        button.removeActionListener(a);
+    }
+    void clear()
+    {
+        textField.setText("");
+    }
+    void setValue(String value)
+    {
+        textField.setText(value);
+    }
+}
 
 // Labeled Formatted Text Input
 class LabelFormatText extends LabelInput

@@ -13,6 +13,7 @@ class SidebarView extends JPanel
     JPanel infoArea     = new JPanel();
     JButton aboutButton = new JButton("ABOUT");
     JButton homeButton  = new JButton("HOME");
+    JButton settingsButton  = new JButton("SETTINGS");
     SidebarView() {
 
         setLayout(new BorderLayout());
@@ -22,13 +23,14 @@ class SidebarView extends JPanel
             pages.setLayout(new GridLayout(0, 1));
             pages.add(homeButton);
             pages.add(aboutButton);
+            pages.add(settingsButton);
         }
         add(pages, BorderLayout.NORTH);
 
         add(infoArea,    BorderLayout.CENTER);
         add(actionsArea, BorderLayout.SOUTH);
     }
-    void setInfoArea(JScrollPane panel)
+    void setInfoArea(JPanel panel)
     {
         infoArea.removeAll();
         infoArea.add(panel);
@@ -49,5 +51,9 @@ class SidebarView extends JPanel
     void onGoToHome(ActionListener listener)
     {
         homeButton.addActionListener(listener);
+    }
+    void onGoToSettings(ActionListener listener)
+    {
+        settingsButton.addActionListener(listener);
     }
 }
