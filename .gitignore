@@ -2,6 +2,7 @@ tags
 cli/data/
 release*
 web*
+gui/bettermb-settings.json
 
 # Compiled class file
 *.class

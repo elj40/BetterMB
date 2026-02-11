@@ -14,12 +14,6 @@ class CancelFormView
     CancelFormView()
     {
         setLayout(new GridLayout(0,1));
-
-        //MaskFormatter fmt = new MaskFormatter();
-        //try { fmt.setMask("#######"); }
-        //catch (Exception e) { e.printStackTrace(); }
-        //fmt.setPlaceholderCharacter('＿');
-
         inputID = new LabelText("[Cancel] Enter meal ID:", ">");
         add(inputID);
 

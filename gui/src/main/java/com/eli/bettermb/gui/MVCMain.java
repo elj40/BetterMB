@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 
 import java.lang.IllegalArgumentException;
 import java.io.IOException;
+import java.io.File;
 
 record ExpectedOptionsResult(int index, String[] options) {};
 
@@ -94,13 +95,12 @@ class MainModel
     MainModel(Client client)
     {
         this.client = client;
-        tryGetMealsBookedInMonth(LocalDate.now().toString());
     }
 
     void tryGetMealsBookedInMonth(String date)
     {
         try { meals = client.getMealsBookedInMonth(date); }
-        catch (IOException e) { e.printStackTrace(); }
+        catch (IOException e) { System.out.println("[tryGetMealsBookedInMonth] failed: " + e.toString()); }
     }
 
     List<MealBookingResponse> bookSync()
@@ -380,6 +380,8 @@ class MainController
     CalendarController calControl;
     boolean suppressEvents;
 
+    final String settingsFilePath = "."+File.separator+"bettermb-settings.json";
+
     MainController(MainView view, MainModel model)
     {
         this.view = view;
@@ -393,26 +395,50 @@ class MainController
         this.view.sidebar.onGoToSettings(e -> onGoToSettings());
 
         this.view.sidebar.setActionsArea(DFView);
+
+        settingsModel.loadFromFile(settingsFilePath);
+        // NOTE: doing it like this prevents us from changing the path at runtime
+        settingsView.onSaveButtonPressed(e -> {
+            settingsModel.cookies = settingsView.cookiesInput.getText();
+            settingsModel.saveToFile(settingsFilePath); });
+
+        settingsView.cookiesInput.setText(settingsModel.cookies);
+        model.client.setCookies(settingsModel.cookies);
+
+        tryGetMealsBookedInMonth(LocalDate.now().toString());
     }
 
     // TODO: clean up, this has bad practices
     void signIn(String signin_entry, String signin_target)
     {
         String cookies = null;
-        if (!Client.debugging) // TODO: remove this horrid code
+        System.out.println("dddd");
+        if (!Client.debugging || true) // TODO: remove this horrid code
         {
             try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
             catch (Exception ex)
             {
-                System.out.println("[signin] Failed to sign in");
+                System.err.println("[signin] Failed to sign in: " + ex.getMessage());
                 return;
             }
-            model.client.setCookies(cookies);
-            System.out.println(cookies);
         }
-        settingsModel.cookies = cookies;
-        settingsView.cookiesInput.setText(settingsModel.cookies);
+
+        if (cookies != null)
+        {
+            settingsModel.cookies = cookies;
+            model.client.setCookies(settingsModel.cookies);
+
+            settingsView.cookiesInput.setText(settingsModel.cookies);
+            settingsModel.saveToFile(settingsFilePath);
+        }
     }
+
+    void reload(String date)
+    {
+        settingsModel.cookies = settingsView.cookiesInput.getText();
+        model.client.setCookies(settingsModel.cookies);
+        tryGetMealsBookedInMonth(date);
+    };
 
     void tryGetMealsBookedInMonth(String date)
     {

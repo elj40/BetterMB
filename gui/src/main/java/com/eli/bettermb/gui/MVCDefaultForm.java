@@ -21,10 +21,10 @@ class DefaultFormView
     DefaultFormView()
     {
         setLayout(new GridLayout(0, 1));
-        add(bookButton);
-        add(cancelButton);
         add(signinButton);
         add(reloadButton);
+        add(bookButton);
+        add(cancelButton);
     }
     void onBookButtonPressed(ActionListener listener)
     {
@@ -52,6 +52,6 @@ class DefaultFormController
         view.onCancelButtonPressed(e -> MControl.setAndClearActionsArea(MControl.CFView));
         view.onBookButtonPressed(e -> MControl.setAndClearActionsArea(MControl.BFView));
         view.onSignInButtonPressed(e -> MControl.signIn(MControl.model.sun_entry_url, MControl.model.sun_target_url));
-        view.onReloadButtonPressed(e -> MControl.tryGetMealsBookedInMonth(LocalDate.now().toString()));
+        view.onReloadButtonPressed(e -> MControl.reload(LocalDate.now().toString()));
     }
 }
