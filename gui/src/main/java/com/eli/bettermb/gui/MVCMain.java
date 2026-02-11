@@ -395,7 +395,11 @@ class MainController
         this.view.sidebar.onGoToSettings(e -> onGoToSettings());
 
         this.view.sidebar.setActionsArea(DFView);
+    }
 
+    // Init logic we would rather do once window is opened
+    void start()
+    {
         settingsModel.loadFromFile(settingsFilePath);
         // NOTE: doing it like this prevents us from changing the path at runtime
         settingsView.onSaveButtonPressed(e -> {
@@ -456,9 +460,27 @@ class MainController
     void onGoToAbout()
     {
         JPanel about = new JPanel();
-        about.setForeground(Color.WHITE);
-        about.setBackground(Color.BLACK);
-        about.add(new JLabel("ABOUT"));
+        about.setLayout(new BoxLayout(about, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("ABOUT");
+        about.add(title);
+
+        JTextArea description = new JTextArea(""+
+                "BetterMB (Better Meal Booking, name only somewhat justified) " +
+                "is a student-written frontend for the universities meal booking API. " +
+                "It aims to surpass the very low bar that the Stellenbosch university " +
+                "has set for user experience. The hope is that students will collaborate " +
+                "and contribute to improving this software.");
+        description.setLineWrap(true);
+        description.setWrapStyleWord(true);
+        description.setEditable(false);
+        about.add(description);
+
+        JLabel contr = new JLabel("Contributions");
+        about.add(contr);
+        JTextArea contributors = new JTextArea("Eli Joubert (elaijoubert@gmail.com): Programmer");
+        contributors.setEditable(false);
+        about.add(contributors);
+
         view.setContent(about);
     }
     void onGoToSettings()

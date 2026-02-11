@@ -34,5 +34,7 @@ public class GUI
 
         frame.add(view);
         frame.setVisible(true);
+
+        controller.start();
     }
 };
