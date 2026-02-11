@@ -3,6 +3,7 @@ cli/data/
 release*
 web*
 gui/bettermb-settings.json
+gui/bettermb-meals.json
 
 # Compiled class file
 *.class

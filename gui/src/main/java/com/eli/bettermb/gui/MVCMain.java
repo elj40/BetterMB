@@ -25,6 +25,14 @@ import java.util.concurrent.CompletableFuture;
 import java.lang.IllegalArgumentException;
 import java.io.IOException;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 
 record ExpectedOptionsResult(int index, String[] options) {};
 
@@ -67,6 +75,8 @@ record BookAsyncResult(
 
 class MainModel
 {
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
     Client client;
     SettingsModel settings = new SettingsModel();
 
@@ -95,6 +105,34 @@ class MainModel
     MainModel(Client client)
     {
         this.client = client;
+    }
+
+    void saveMealsToFile(String filename)
+    {
+        String json = gson.toJson(meals);
+        Path path = Paths.get(filename);
+        try {
+            Files.createDirectories(path.getParent());
+            Files.write(path, json.getBytes());
+            System.out.println("Meals saved to " + filename);
+        } catch (IOException e) {
+            System.err.println("Error saving to file: " + e.getMessage());
+        }
+
+    }
+
+    void loadMealsFromFile(String filename)
+    {
+        Type mealListType = new TypeToken<List<Meal>>(){}.getType();
+
+        // Read the JSON file and convert it to List<MyObject>
+        try {
+            String json = new String(Files.readAllBytes(Paths.get(filename)));
+            List<Meal> loadedMeals = gson.fromJson(json, mealListType);
+            meals = loadedMeals;
+        } catch (IOException e) {
+            System.out.println("[loadMealsFromFile] failed: " + e.getMessage());
+        }
     }
 
     void tryGetMealsBookedInMonth(String date)
@@ -381,6 +419,7 @@ class MainController
     boolean suppressEvents;
 
     final String settingsFilePath = "."+File.separator+"bettermb-settings.json";
+    final String cachedMealsFilePath = "."+File.separator+"bettermb-meals.json";
 
     MainController(MainView view, MainModel model)
     {
@@ -409,7 +448,11 @@ class MainController
         settingsView.cookiesInput.setText(settingsModel.cookies);
         model.client.setCookies(settingsModel.cookies);
 
-        tryGetMealsBookedInMonth(LocalDate.now().toString());
+        String date = LocalDate.now().toString();
+        model.loadMealsFromFile(cachedMealsFilePath);
+        setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
+
+        tryGetMealsBookedInMonth(date);
     }
 
     // TODO: clean up, this has bad practices
@@ -442,6 +485,7 @@ class MainController
         settingsModel.cookies = settingsView.cookiesInput.getText();
         model.client.setCookies(settingsModel.cookies);
         tryGetMealsBookedInMonth(date);
+        model.saveMealsToFile(cachedMealsFilePath);
     };
 
     void tryGetMealsBookedInMonth(String date)
@@ -672,9 +716,9 @@ class MainController
         bar.futureMeals().thenAccept(result -> {
             if (result == null) return;
             model.meals.addAll(result);
+            model.saveMealsToFile(cachedMealsFilePath);
             List<CalendarMealView> meals = model.getAllMealViews();
             calControl.setCalendarMeals(meals);
-            System.out.println("Second");
         });
     }
     void cancel(String id)
@@ -686,5 +730,6 @@ class MainController
 
         List<CalendarMealView> meals = model.getAllMealViews();
         calControl.setCalendarMeals(meals);
+        model.saveMealsToFile(cachedMealsFilePath);
     }
 }
