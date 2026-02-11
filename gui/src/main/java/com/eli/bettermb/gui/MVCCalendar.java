@@ -59,6 +59,7 @@ class CellView extends JPanel{
         {
             slots[i] = new JButton();
             slots[i].setAlignmentX(LEFT_ALIGNMENT);
+            slots[i].setForeground(Color.WHITE);
             add(slots[i]);
         }
     }
@@ -88,7 +89,10 @@ class CalendarMonthView extends JPanel {
     {
         removeAll();
         LocalDate first = month.atDay(1);
-        int shift = (first.getDayOfWeek().getValue() % 7) - 1;
+        System.out.println("first: " + first.toString());
+        System.out.println("firstV: " + Integer.toString(first.getDayOfWeek().getValue()));
+        int shift = (first.getDayOfWeek().getValue()-1) % 7;
+        System.out.println("firstS: " + Integer.toString(shift));
 
         for (int i = 0; i < shift; i++) { add(new JLabel("")); }
 
@@ -222,6 +226,7 @@ class CalendarController
         {
             LocalDate mealDate = meal.date();
             YearMonth mealMonth = YearMonth.of(mealDate.getYear(), mealDate.getMonth());
+
             if (!mealMonth.equals(currentMonth)) continue;
             int index = mealDate.getDayOfMonth()-1;
             cells[index]

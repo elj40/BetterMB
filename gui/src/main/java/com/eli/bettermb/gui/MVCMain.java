@@ -107,6 +107,10 @@ class MainModel
         this.client = client;
     }
 
+    // TODO:
+    // these functions save and load the entirety of all meals ever booked
+    // this means the cache file can get very large and slow to parse eventually
+    // Need to consider caching strategies that make sense
     void saveMealsToFile(String filename)
     {
         String json = gson.toJson(meals);
