@@ -26,7 +26,9 @@ Use the fat-jar if you already have java installed
 Use the JRE image if you do not have Java (cannot guarantee it'll work)
 * extract the archive
 * navigate to the `bin` directory inside the extracted directory
-* run the `bettermb`(unix) or `bettermb.bat`(windows) script (double-click or terminal)
+* run the `bettermb` script:
+    * Unix: `./bettermb`
+    * Windows: `./bettermb.bat` (double-click or terminal)
 
 ### Build from source
 1. Download the source code (either with `git clone` or download the zip)
