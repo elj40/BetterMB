@@ -6,7 +6,7 @@ frontends can be implemented easily.
 
 ## Dependencies
 To run BetterMB, you need the following installed on your computer:
-* Java 21 JDK: [Download here] (https://www.oracle.com/java/technologies/downloads/#java21)
+* Java 21 JDK: [Download here](https://www.oracle.com/java/technologies/downloads/#java21)
 (Make sure it's added to your system's PATH)
 * Google Chrome: [Download here](https://www.google.com/chrome/)
 
