@@ -1,17 +1,38 @@
 # BetterMB
-A client for the SU meal booking system along with a CLI that offers a better user experience than the one provided by Stellenbosch University
+Project that aims to improve on Stellenbosch University's current meal booking
+system.  
+Comes with a client that is seperated from frontends so that custom
+frontends can be implemented easily.
 
 ## Dependencies
-* [Java 21 JDK](https://www.oracle.com/java/technologies/downloads/#java21): required to compile and run BetterMB
-* Google Chrome
+To run BetterMB, you need the following installed on your computer:
+* Java 21 JDK: [Download here] (https://www.oracle.com/java/technologies/downloads/#java21)
+(Make sure it's added to your system's PATH)
+* Google Chrome: [Download here](https://www.google.com/chrome/)
 
-## Build from source
+## Installation and Setup
+
+### Running Precompiled Releases
+
+BetterMB releases may include **fat-jars** or **JRE images**.
+
+#### For Fat-Jars
+Use the fat-jar if you already have java installed
+* save the `bettermb-<version_info>.jar` file wherever you like
+* run `java --version` (ensure you are using Java 21 or higher)
+* run `java -jar bettermb-<version_info>.jar`
+
+#### For JRE Images
+Use the JRE image if you do not have Java (cannot guarantee it'll work)
+* extract the archive
+* navigate to the `bin` directory inside the extracted directory
+* run the `bettermb`(unix) or `bettermb.bat`(windows) script (double-click or terminal)
+
+### Build from source
 1. Download the source code (either with `git clone` or download the zip)
-2. Run './gradlew build' or './gradlew.bat build'
-3. Run './gradlew :cli:run' for the cli
-
-## Download precompiled
-* See releases for fat-jars and JRE images
+2. Run `./gradlew build` or `./gradlew.bat build`
+3. Run `./gradlew :cli:run` for the cli
+3. Run `./gradlew :gui:run` for the gui
 
 ## Contributing to BetterMB
 
@@ -21,7 +42,8 @@ A client for the SU meal booking system along with a CLI that offers a better us
 3. Submit a pull request with a clear description.
 
 ### Code Standards
-- Include tests for new features or bug fixes.
+- The code quality as of right now is not very high, but the bare minimum is
+  still to have readable code with consistent naming conventions.
 
 ## Issue Tracking
 - Use the issue tracker for reporting bugs or suggesting features.
@@ -45,6 +67,3 @@ A client for the SU meal booking system along with a CLI that offers a better us
 - Contributors will be acknowledged in the CONTRIBUTORS.md file.
 
 Thank you for your contributions!
-
-# Issues
-- The way we pack the data is gonna be pretty repetitive, not a problem since amount is tiny, but maybe look into
