@@ -31,6 +31,7 @@ import com.google.gson.JsonSyntaxException;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import io.github.bonigarcia.wdm.WebDriverManager;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -94,6 +95,8 @@ public class Client
     static public String getSecurityCookiesBySignIn(String entryUrl, String targetUrlStart)
             throws IOException, InterruptedException
     {
+        WebDriverManager.chromedriver().setup();
+
         if (Client.debugging) Logger.getLogger("org.openqa.selenium").setLevel(Level.INFO);
         else Logger.getLogger("org.openqa.selenium").setLevel(Level.SEVERE);
         WebDriver driver = new ChromeDriver();
@@ -123,7 +126,7 @@ public class Client
             securityCookies = securityCookies + cookie.getValue();
         }
         Client.debug("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
-        //driver.quit();
+        driver.quit();
         return securityCookies;
     };
     public QuotaSummary getQuotaSummary()
