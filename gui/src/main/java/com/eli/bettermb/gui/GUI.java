@@ -20,12 +20,8 @@ public class GUI
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
 
-        Client.debugging = true;
-
-        //Client client = new Client(new StubBookHttpClient());
-        //client.setUrlBase("http://127.0.0.0");
-
         Client client = new Client(new HttpClientImpl());
+        Client.debugging = false;
         client.setUrlBase(sun_url);
 
         MainView view = new MainView();
@@ -33,6 +29,8 @@ public class GUI
         MainController controller = new MainController(view, model);
 
         frame.add(view);
+
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setVisible(true);
 
         controller.start();

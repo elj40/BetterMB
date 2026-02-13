@@ -323,7 +323,6 @@ class MainModel
         {
             FacilityCodeMap.put(facility.description, facility.code);
             descriptions.add(facility.description);
-            System.out.println(facility.description + ": " + Integer.toString(facility.code));
         }
         return descriptions.toArray(new String[0]);
     }
@@ -352,7 +351,6 @@ class MainModel
             OptionCodeMap.put(option.description, option.code);
             SessionCodeMap.put(option.description, option.sessionId);
             descriptions.add(option.description);
-            System.out.println(option.description + ": " + Integer.toString(option.code));
         }
         return descriptions.toArray(new String[0]);
     }
@@ -425,6 +423,8 @@ class MainController
     final String settingsFilePath = "."+File.separator+"bettermb-settings.json";
     final String cachedMealsFilePath = "."+File.separator+"bettermb-meals.json";
 
+    final String dateToday = LocalDate.now().toString();
+
     MainController(MainView view, MainModel model)
     {
         this.view = view;
@@ -463,15 +463,11 @@ class MainController
     void signIn(String signin_entry, String signin_target)
     {
         String cookies = null;
-        System.out.println("dddd");
-        if (!Client.debugging || true) // TODO: remove this horrid code
+        try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
+        catch (Exception ex)
         {
-            try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
-            catch (Exception ex)
-            {
-                System.err.println("[signin] Failed to sign in: " + ex.getMessage());
-                return;
-            }
+            System.err.println("[signin] Failed to sign in: " + ex.getMessage());
+            return;
         }
 
         if (cookies != null)
@@ -481,6 +477,8 @@ class MainController
 
             settingsView.cookiesInput.setText(settingsModel.cookies);
             settingsModel.saveToFile(settingsFilePath);
+
+            reload(dateToday);
         }
     }
 

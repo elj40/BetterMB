@@ -4,6 +4,8 @@ release*
 web*
 gui/bettermb-settings.json
 gui/bettermb-meals.json
+bettermb-meals.json
+bettermb-settings.json
 
 # Compiled class file
 *.class

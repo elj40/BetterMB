@@ -56,8 +56,6 @@ class SettingsModel
     void saveToFile(String filename)
     {
         String json = gson.toJson(this);
-        System.out.println(cookies);
-        System.out.println(json);
         Path path = Paths.get(filename);
         try {
             Files.createDirectories(path.getParent());
@@ -74,7 +72,6 @@ class SettingsModel
             SettingsModel loadedSettings = gson.fromJson(json, SettingsModel.class);
 
             this.cookies = loadedSettings.cookies;
-            System.out.println(this.cookies);
 
             System.out.println("Settings loaded from " + filename);
         } catch (IOException e) {

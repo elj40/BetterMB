@@ -89,10 +89,7 @@ class CalendarMonthView extends JPanel {
     {
         removeAll();
         LocalDate first = month.atDay(1);
-        System.out.println("first: " + first.toString());
-        System.out.println("firstV: " + Integer.toString(first.getDayOfWeek().getValue()));
         int shift = (first.getDayOfWeek().getValue()-1) % 7;
-        System.out.println("firstS: " + Integer.toString(shift));
 
         for (int i = 0; i < shift; i++) { add(new JLabel("")); }
 
