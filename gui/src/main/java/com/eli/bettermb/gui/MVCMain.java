@@ -350,7 +350,7 @@ class MainModel
         {
             OptionCodeMap.put(option.description, option.code);
             SessionCodeMap.put(option.description, option.sessionId);
-            descriptions.add(option.description);
+            descriptions.add(option.cost + " - " + option.description);
         }
         return descriptions.toArray(new String[0]);
     }
