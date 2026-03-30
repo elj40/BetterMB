@@ -12,5 +12,6 @@ nnoremap <Leader>t :BSplitTerm
 
 nnoremap <leader>cc :BSplitTerm ./gradlew classes<cr>
 nnoremap <leader>rr :BSplitTerm ./gradlew :gui:run<cr>
+nnoremap <leader>dd :BSplitTerm ./gradlew :gui:runForJdb<cr>
 
 autocmd VimEnter * Lexplore | vertical resize 40

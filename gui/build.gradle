@@ -9,6 +9,21 @@ base {
     archivesName = "bettermb-gui"
 }
 
+task runForJdb(type: JavaExec) {
+    group = 'application'
+    description = 'Run app with JDWP agent for jdb attachment'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.eli.bettermb.gui.GUI'
+    jvmArgs = [
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
+    ]
+}
+
+tasks.named('runForJdb') {
+    dependsOn(tasks.named('assemble'))
+}
+
+
 group = "com.eli"
 version = "0.1.0"
 
