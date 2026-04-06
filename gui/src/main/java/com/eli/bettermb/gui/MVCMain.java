@@ -392,12 +392,13 @@ class MainModel
         OptionCodeMap.clear();
         SessionCodeMap.clear();
         List<String> descriptions = new ArrayList<>();
-        descriptions.add("");
+        descriptions.add(" ");
         for (MealOption option : options)
         {
-            OptionCodeMap.put(option.description, option.code);
-            SessionCodeMap.put(option.description, option.sessionId);
-            descriptions.add(option.cost + " - " + option.description);
+            String description = option.cost + " - " + option.description;
+            OptionCodeMap.put(description, option.code);
+            SessionCodeMap.put(description, option.sessionId);
+            descriptions.add(description);
         }
         return descriptions.toArray(new String[0]);
     }
@@ -452,8 +453,7 @@ class MainController
     MainView view;
     MainModel model;
 
-    SettingsModel settingsModel = new SettingsModel();
-    SettingsView settingsView = new SettingsView();
+    SettingsController settingsController = new SettingsController();
 
     DefaultFormView DFView = new DefaultFormView();
     DefaultFormController DFControl = new DefaultFormController(this, DFView);
@@ -467,8 +467,6 @@ class MainController
     CalendarController calControl;
     boolean suppressEvents;
 
-    final String settingsFilePath = "."+File.separator+"bettermb-settings.json";
-    final String cachedMealsFilePath = "."+File.separator+"bettermb-meals.json";
 
     final String dateToday = LocalDate.now().toString();
 
@@ -528,11 +526,12 @@ class MainController
 
         if (cookies != null)
         {
-            settingsModel.cookies = cookies;
-            model.client.setCookies(settingsModel.cookies);
+            // TODO: should probably be pulled out into controller function
+            settingsController.model.cookies = cookies;
+            model.client.setCookies(settingsController.model.cookies);
 
-            settingsView.cookiesInput.setText(settingsModel.cookies);
-            settingsModel.saveToFile(settingsFilePath);
+            settingsController.view.cookiesInput.setText(settingsController.model.cookies);
+            settingsController.model.saveToFile(settingsController.model.settingsFilePath);
 
             reload(dateToday);
         }
@@ -540,10 +539,10 @@ class MainController
 
     void reload(String date)
     {
-        settingsModel.cookies = settingsView.cookiesInput.getText();
-        model.client.setCookies(settingsModel.cookies);
+        settingsController.model.cookies = settingsController.view.cookiesInput.getText();
+        model.client.setCookies(settingsController.model.cookies);
         tryGetMealsBookedInMonth(date);
-        model.saveMealsToFile(cachedMealsFilePath);
+        model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
     };
 
     void tryGetMealsBookedInMonth(String date)
@@ -588,7 +587,7 @@ class MainController
     }
     void onGoToSettings()
     {
-        view.setContent(settingsView);
+        view.setContent(settingsController.view);
     }
     void onGoToHome()
     {
@@ -802,7 +801,7 @@ class MainController
         bar.futureMeals().thenAccept(result -> {
             if (result == null) return;
             model.meals.addAll(result);
-            model.saveMealsToFile(cachedMealsFilePath);
+            model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
             List<CalendarMealView> meals = model.getAllMealViews();
             calControl.setCalendarMeals(meals);
         });
@@ -816,6 +815,6 @@ class MainController
 
         List<CalendarMealView> meals = model.getAllMealViews();
         calControl.setCalendarMeals(meals);
-        model.saveMealsToFile(cachedMealsFilePath);
+        model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
     }
 }
