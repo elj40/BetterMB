@@ -20,7 +20,7 @@ task runForJdb(type: JavaExec) {
 }
 
 tasks.named('runForJdb') {
-    dependsOn(tasks.named('assemble'))
+    dependsOn(tasks.named('compileJava'))
 }
 
 
