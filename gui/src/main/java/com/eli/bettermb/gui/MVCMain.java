@@ -493,7 +493,8 @@ class MainController
     void tryGetMealsBookedInMonth(String date)
     {
         model.tryGetMealsBookedInMonth(date);
-        setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
+        YearMonth ym = YearMonth.parse(date.substring(0,date.length()-3)); // TODO: this is jank
+        setMonth(ym);
     }
 
     void setMonth(YearMonth month)
@@ -625,12 +626,14 @@ class MainController
         // TODO: consider this to be a BookingFormView function
         // Right now convenient to keep here because of suppressEvents
         suppressEvents = true;
+        settingsController.suppressEvents = true;
 
         BFView.disableInputsFrom(next);
         next.shouldListenerIgnore = true;
         next.setItems(options);
         next.setEnabled(true);
 
+        settingsController.suppressEvents = false;
         suppressEvents=false;
     }
 
@@ -654,12 +657,37 @@ class MainController
         if (slot.isEmpty()) return;
 
         String[] options;
-        try { options = model.getAvailableMealFaclities(slot); }
+        try
+        {
+            options = model.getAvailableMealFaclities(slot);
+            settingsController.addDefaultFacilityOptions(options);
+        }
         catch (Exception e) { e.printStackTrace(); return; }
         model.setMealBookingSlot(slot);
 
         LabelComboBox next = BFView.faclInput;
         prepareRestOfBookingForm(next, options);
+
+        if (settingsController.model.defaultFacility != null)
+        {
+            String default_ = settingsController.model.defaultFacility;
+            int i = 0;
+            for (String opt : options)
+            {
+                // NOTE: im not really sure why I dont allow it to run
+                // automatically when I set the selected index, but I am rather
+                // scared of the hidden async stuff
+                if (default_.equals(opt))
+                {
+                    suppressEvents = true;
+                    next.setSelectedIndex(i);
+                    suppressEvents = false;
+                    break;
+                }
+                i++;
+            }
+            bookingFaclEntered(default_);
+        }
     };
 
     void bookingFaclEntered(String facility)

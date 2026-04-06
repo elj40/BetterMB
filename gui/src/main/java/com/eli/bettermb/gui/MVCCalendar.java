@@ -100,7 +100,7 @@ class CalendarMonthView extends JPanel {
             cells[day-1] = cell;
             add(cell);
         }
-        repaint();
+        revalidate();
     }
 }
 class CalendarHeaderView extends JPanel {
@@ -172,7 +172,6 @@ class CalendarController
         headerView.onNextPressed(e -> MControl.setMonth(currentMonth.plusMonths(1)));
         headerView.onPrevPressed(e -> MControl.setMonth(currentMonth.minusMonths(1)));
 
-        setMonth(currentMonth);
         attachCellControllersToViews();
     }
     void attachCellControllersToViews()
