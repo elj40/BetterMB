@@ -670,6 +670,7 @@ class MainController
             suppressEvents = false;
             BFView.slotInput.setSelectedIndex(expected.index());
 
+            // TODO: this might need to be a swing worker since there is UI thread safety involved
             CompletableFuture validateFuture = CompletableFuture.runAsync(
                     () -> { System.out.println("TODO: async check expected slots."); });
             try { validateFuture.get(); }
@@ -723,6 +724,11 @@ class MainController
         LabelComboBox next = BFView.faclInput;
         prepareRestOfBookingForm(next, options);
 
+        // TODO:
+        // this cannot rely on options to deduce if it is available,
+        // defeats the whole purpose,
+        // ideally we would like to be able to fill in defaults completely,
+        // and only revert back if it was incorrect
         if (settingsController.model.defaultFacility != null)
         {
             String default_ = settingsController.model.defaultFacility;

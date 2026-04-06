@@ -20,7 +20,8 @@ public class GUI
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
 
-        Client client = new Client(new HttpClientImpl());
+        //Client client = new Client(new HttpClientImpl());
+        Client client = new Client(new StubBookHttpClient());
         Client.debugging = false;
         client.setUrlBase(sun_url);
 

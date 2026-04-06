@@ -17,7 +17,12 @@ import java.io.IOException;
 
 class SettingsView extends JPanel
 {
+    final int textFieldColumns = 64;
+
     JLabel title = new JLabel("Settings");
+
+    JLabel showTutorialLabel = new JLabel("Display help message on startup");
+    JCheckBox showTutorialCheckBox = new JCheckBox();
 
     JLabel cookiesLabel = new JLabel("Cookies");
     JTextField cookiesInput = new JTextField();
@@ -35,14 +40,54 @@ class SettingsView extends JPanel
         add(title, BorderLayout.NORTH);
 
         JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        GroupLayout layout = new GroupLayout(content);
+        content.setLayout(layout);
 
-        content.add(createSetting(cookiesLabel, cookiesInput));
-        content.add(createSetting(cachedMealsLabel, cachedMealsInput));
-        content.add(createSetting(defaultFacilityLabel, defaultFacilityInput));
-        content.add(saveButton);
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
 
-        add(content, BorderLayout.CENTER);
+        cookiesInput.setColumns(textFieldColumns);
+        cachedMealsInput.setColumns(textFieldColumns);
+
+        var horizontalGroup = layout.createSequentialGroup();
+        horizontalGroup.addGroup( layout.createParallelGroup()
+                .addComponent(showTutorialLabel)
+                .addComponent(defaultFacilityLabel)
+                .addComponent(cachedMealsLabel)
+                .addComponent(cookiesLabel));
+        horizontalGroup.addGroup( layout.createParallelGroup()
+                .addComponent(showTutorialCheckBox)
+                .addComponent(defaultFacilityInput)
+                .addComponent(cookiesInput)
+                .addComponent(cachedMealsInput)
+                .addComponent(saveButton));
+        layout.setHorizontalGroup(horizontalGroup);
+
+        var verticalGroup = layout.createSequentialGroup();
+        verticalGroup.addGroup( layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(showTutorialLabel)
+                .addComponent(showTutorialCheckBox));
+        verticalGroup.addGroup( layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(defaultFacilityLabel)
+                .addComponent(defaultFacilityInput));
+        verticalGroup.addGroup( layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(cachedMealsLabel)
+                .addComponent(cachedMealsInput));
+        verticalGroup.addGroup( layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(cookiesLabel)
+                .addComponent(cookiesInput));
+        verticalGroup.addGroup( layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                .addComponent(saveButton));
+        layout.setVerticalGroup(verticalGroup);
+
+        // content.add(createSetting(showTutorialLabel, showTutorialCheckBox));
+        // content.add(createSetting(cookiesLabel, cookiesInput));
+        // content.add(createSetting(cachedMealsLabel, cachedMealsInput));
+        // content.add(createSetting(defaultFacilityLabel, defaultFacilityInput));
+
+        var scrollPane = new JScrollPane(content);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        add(scrollPane, BorderLayout.CENTER);
     }
     JPanel createSetting(JComponent desc, JComponent field)
     {
@@ -73,9 +118,10 @@ class SettingsView extends JPanel
 class SettingsModel
 {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    String cookies = "default=cookies";
-
     final String settingsFilePath = "."+File.separator+"bettermb-settings.json";
+
+    boolean showTutorial = true;
+    String cookies = "default=cookies";
     String cachedMealsFilePath = "."+File.separator+"bettermb-meals.json";
 
     final int expectedFacilityCount = 8;
@@ -101,6 +147,7 @@ class SettingsModel
             String json = new String(Files.readAllBytes(Paths.get(filename)));
             SettingsModel loadedSettings = gson.fromJson(json, SettingsModel.class);
 
+            this.showTutorial = loadedSettings.showTutorial;
             this.cookies = loadedSettings.cookies;
             this.cachedMealsFilePath = loadedSettings.cachedMealsFilePath;
             this.knownFacilities = loadedSettings.knownFacilities;
@@ -137,15 +184,21 @@ class SettingsController
         suppressEvents = true;
         model.loadFromFile(model.settingsFilePath);
         view.onSaveButtonPressed(e -> {
+            model.showTutorial = view.showTutorialCheckBox.isSelected();
             model.cookies = view.cookiesInput.getText();
             model.cachedMealsFilePath = view.cachedMealsInput.getText();
             model.saveToFile(model.settingsFilePath); });
 
+        view.showTutorialCheckBox.setSelected(model.showTutorial);
+        view.cachedMealsInput.setText(model.cachedMealsFilePath);
         view.cookiesInput.setText(model.cookies);
         view.cachedMealsInput.setText(model.cachedMealsFilePath);
 
         String[] known = model.knownFacilities.toArray(new String[0]);
         view.setKnownFacilities(known);
+        // NOTE: the commented out section does not ensure that the option is available,
+        // this is undefined as far as I know, but it would be cleaner
+        // view.defaultFacilityInput.setSelectedItem(model.defaultFacility);
         for (String fac : known)
         {
             if (model.defaultFacility.equals(fac))
