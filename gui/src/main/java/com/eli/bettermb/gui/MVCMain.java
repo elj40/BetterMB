@@ -114,18 +114,51 @@ class MainModel
     void saveMealsToFile(String filename)
     {
         String json = gson.toJson(meals);
-        Path path = Paths.get(filename);
+        Path path = Paths.get(filename).toAbsolutePath();
         try {
             Files.createDirectories(path.getParent());
             Files.write(path, json.getBytes());
-            System.out.println("Meals saved to " + filename);
+            // TODO: errors displayed to user or something
+            System.out.println("Meals saved to " + path.toString());
         } catch (IOException e) {
             System.err.println("Error saving to file: " + e.getMessage());
         }
-
     }
 
-    void loadMealsFromFile(String filename)
+    public void mergeMeals(List<Meal> newMeals)
+    {
+        if (newMeals == null) return;
+        for (Meal newMeal : newMeals)
+        {
+            mergeMeal(newMeal);
+        }
+    };
+    public int mergeMeal(Meal newMeal)
+    {
+        boolean replaced = false;
+        for (int i = 0; i < this.meals.size(); i++)
+        {
+            Meal oldMeal = this.meals.get(i);
+
+            if (oldMeal.mealSlot != newMeal.mealSlot) continue;
+            if (!oldMeal.facility.equals(newMeal.facility)) continue;
+            int    end      = "yyyy-mm-dd".length();
+            if (oldMeal.start.length() < end) continue;
+            if (newMeal.start.length() < end) continue;
+            String oldMealDate = oldMeal.start.substring(0,end);
+            String newMealDate = newMeal.start.substring(0,end);
+            if (!oldMealDate.equals(newMealDate)) continue;
+            if (oldMeal.id != 0 && newMeal.id == 0) continue;
+
+            this.meals.set(i, newMeal);
+            replaced = true;
+            break;
+        }
+        if (!replaced) this.meals.add(newMeal);
+        return this.meals.size();
+    };
+
+    int loadMealsFromFile(String filename)
     {
         Type mealListType = new TypeToken<List<Meal>>(){}.getType();
 
@@ -134,14 +167,28 @@ class MainModel
             String json = new String(Files.readAllBytes(Paths.get(filename)));
             List<Meal> loadedMeals = gson.fromJson(json, mealListType);
             meals = loadedMeals;
+            System.out.println("Meals loaded successfully from " + filename + ": " + Integer.toString(meals.size()));
+            return meals.size();
         } catch (IOException e) {
             System.out.println("[loadMealsFromFile] failed: " + e.getMessage());
         }
+        return -1;
     }
+
+    CompletableFuture<List<Meal>> updateMealsBookedAsync(String date)
+    {
+        CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(date);
+        var futureMealsFirstStage = futureMeals.thenApply(result -> {
+            mergeMeals(result);
+            System.out.print("futureMeals.thenApply meals count: ");
+            return result;
+        });
+        return futureMealsFirstStage;
+    };
 
     void tryGetMealsBookedInMonth(String date)
     {
-        try { meals = client.getMealsBookedInMonth(date); }
+        try { mergeMeals(client.getMealsBookedInMonth(date)); }
         catch (IOException e) { System.out.println("[tryGetMealsBookedInMonth] failed: " + e.toString()); }
     }
 
@@ -443,20 +490,29 @@ class MainController
     // Init logic we would rather do once window is opened
     void start()
     {
-        settingsModel.loadFromFile(settingsFilePath);
-        // NOTE: doing it like this prevents us from changing the path at runtime
-        settingsView.onSaveButtonPressed(e -> {
-            settingsModel.cookies = settingsView.cookiesInput.getText();
-            settingsModel.saveToFile(settingsFilePath); });
-
-        settingsView.cookiesInput.setText(settingsModel.cookies);
-        model.client.setCookies(settingsModel.cookies);
+        settingsController.start();
+        model.client.setCookies(settingsController.model.cookies);
 
         String date = LocalDate.now().toString();
-        model.loadMealsFromFile(cachedMealsFilePath);
-        setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
+        model.loadMealsFromFile(settingsController.model.cachedMealsFilePath);
+        this.refreshMonth(date);
 
-        tryGetMealsBookedInMonth(date);
+        //tryGetMealsBookedInMonth(date);
+        var mealsFuture = model.updateMealsBookedAsync(date);
+        mealsFuture.thenAccept(result -> {
+            if (result == null) return;
+            System.out.print("mealsFuture.thenAccept: ");
+            model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
+            // NOTE: for some reason cannot set month in here, think of better
+            // name for function
+            this.refreshMonth(date);
+        });
+
+    }
+
+    void refreshMonth(String date)
+    {
+        setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
     }
 
     // TODO: clean up, this has bad practices
