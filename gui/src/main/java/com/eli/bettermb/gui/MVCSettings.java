@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 import java.util.HashSet;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,6 +33,23 @@ class SettingsView extends JPanel
 
     JLabel defaultFacilityLabel = new JLabel("Default Facility");
     JComboBox defaultFacilityInput = new JComboBox();
+
+    final AbstractButton[] buttons = {
+        showTutorialCheckBox,
+    };
+    final JTextField[] textfields = {
+        cookiesInput,
+        cachedMealsInput,
+    };
+    final JComboBox[] comboBoxes = {
+        defaultFacilityInput,
+    };
+    final JComponent[] inputs = {
+        showTutorialCheckBox,
+        cookiesInput,
+        cachedMealsInput,
+        defaultFacilityInput,
+    };
 
     JButton saveButton = new JButton("SAVE");
     SettingsView()
@@ -174,11 +192,6 @@ class SettingsController
 
     boolean suppressEvents = false;
 
-    SettingsController()
-    {
-        this.view.onDefaultFacilitySelected(e -> this.onDefaultFacilitySelected());
-    }
-
     void start()
     {
         suppressEvents = true;
@@ -188,6 +201,19 @@ class SettingsController
             model.cookies = view.cookiesInput.getText();
             model.cachedMealsFilePath = view.cachedMealsInput.getText();
             model.saveToFile(model.settingsFilePath); });
+
+        this.view.onDefaultFacilitySelected(e -> this.onDefaultFacilitySelected());
+
+        for (JComponent c : view.inputs)
+        {
+            if (c instanceof JTextField input)
+                input.addActionListener(e -> saveSettings());
+            if (c instanceof AbstractButton input)
+                input.addActionListener(e -> saveSettings());
+            if (c instanceof JComboBox input)
+                input.addActionListener(e -> saveSettings());
+        }
+
 
         view.showTutorialCheckBox.setSelected(model.showTutorial);
         view.cachedMealsInput.setText(model.cachedMealsFilePath);
@@ -208,6 +234,13 @@ class SettingsController
             }
         }
         suppressEvents = false;
+    }
+
+    void saveSettings()
+    {
+        // TODO: consider if there are consequences to saving as soon as input
+        // field changes, will we have to do some janky suppressEvents stuff?
+        // System.out.println("saveSettings");
     }
 
     void onDefaultFacilitySelected()
