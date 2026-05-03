@@ -320,13 +320,14 @@ class MainModel
     };
 
     String[] getAvailableMealSlots(String date)
-        throws DateTimeParseException
+        throws DateTimeParseException, SecurityFailedException
     {
         date = date.trim();
         LocalDate.parse(date); // Just to check the parsing
 
         List<MealSlot> slots = new ArrayList<>();
         try { slots = client.getAvailableMealSlots(date); }
+        catch (SecurityFailedException sex) { throw sex; }
         catch (Exception e) { e.printStackTrace(); }
 
         if (slots == null)
@@ -347,7 +348,8 @@ class MainModel
         return descriptions.toArray(new String[0]);
     }
 
-    String[] getAvailableMealFaclities(String slotDescription)
+    String[] getAvailableMealFacilities(String slotDescription)
+        throws SecurityFailedException
     {
         if (!SlotCodeMap.containsKey(slotDescription)) throw new IllegalArgumentException();
 
@@ -355,6 +357,7 @@ class MainModel
         char   slot = (char) SlotCodeMap.get(slotDescription);
         List<MealFacility> facilites = new ArrayList<>();
         try { facilites = client.getAvailableMealFacilities(date, slot); }
+        catch (SecurityFailedException sex) { throw sex; }
         catch (Exception e) { e.printStackTrace(); }
 
         if (facilites == null)
@@ -498,12 +501,18 @@ class MainController
         //tryGetMealsBookedInMonth(date);
         var mealsFuture = model.updateMealsBookedAsync(date);
         mealsFuture.thenAccept(result -> {
-            if (result == null) return;
+            if (result == null)
+            {
+                displaySignInFail();
+                return;
+            }
             System.out.print("mealsFuture.thenAccept: ");
             model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
             // NOTE: for some reason cannot set month in here, think of better
             // name for function
-            this.refreshMonth(date);
+            // NOTE: reason could be due to weirdness in threads, may need to
+            // consider a SwingWorker here somehow
+            SwingUtilities.invokeLater(() -> this.refreshMonth(date));
         });
 
     }
@@ -609,6 +618,14 @@ class MainController
     {
         view.sidebar.setInfoArea(panel);
     };
+
+    void displaySignInFail()
+    {
+        System.out.println("displaySignInFail");
+        setAndClearActionsArea(DFView);
+        SwingUtilities.invokeLater(() -> DFView.signinButton.setBackground(Color.YELLOW));
+    };
+
     void setInfoAreaWithCancelResults(MealCancelResponse mcr)
     {
         JPanel responsePanel = JDebug.createDebugPanel();
@@ -700,6 +717,7 @@ class MainController
 
         String[] options;
         try { options = model.getAvailableMealSlots(date); }
+        catch (SecurityFailedException sex) { displaySignInFail(); return; }
         catch (Exception e) { e.printStackTrace(); return; }
         model.setMealBookingDate(date);
 
@@ -715,10 +733,10 @@ class MainController
         String[] options;
         try
         {
-            options = model.getAvailableMealFaclities(slot);
+            options = model.getAvailableMealFacilities(slot);
             settingsController.addDefaultFacilityOptions(options);
         }
-        catch (Exception e) { e.printStackTrace(); return; }
+        catch (SecurityFailedException sex) { displaySignInFail(); return; }
         model.setMealBookingSlot(slot);
 
         LabelComboBox next = BFView.faclInput;
@@ -759,7 +777,14 @@ class MainController
         String[] options;
         model.setMealBookingFacility(facility);
         try { options = model.getAvailableMealOptions(facility); }
-        catch (Exception e) { e.printStackTrace(); return; }
+        catch (SecurityFailedException sex) { displaySignInFail(); return; }
+        catch (IllegalArgumentException e) {
+            System.out.print("bookingOptnEntered: ");
+            System.out.println(facility);
+            e.printStackTrace();
+            return;
+        }
+        catch (IOException e) { e.printStackTrace(); return; }
 
         // TODO: use model to see if it was valid
         LabelComboBox next = BFView.optnInput;
@@ -772,7 +797,11 @@ class MainController
         if (option.isEmpty()) return;
 
         try { model.setMealBookingOption(option); }
-        catch (IllegalArgumentException e) { e.printStackTrace(); }
+        catch (IllegalArgumentException e) {
+            System.out.print("bookingOptnEntered: ");
+            System.out.print(option);
+            e.printStackTrace();
+        }
 
         LabelNumberSpinner next = BFView.daysInput;
         next.setEnabled(true);
@@ -782,7 +811,11 @@ class MainController
     void bookingDaysEntered(int days)
     {
         try { model.setMealBookingAhead(days); }
-        catch (IllegalArgumentException e) { e.printStackTrace(); }
+        catch (IllegalArgumentException e) {
+            System.out.print("bookingDaysEntered: ");
+            System.out.print(days);
+            e.printStackTrace();
+        }
         model.endMealBooking();
         book();
     };
@@ -790,7 +823,11 @@ class MainController
     {
         int days = BFView.daysInput.getValue();
         try { model.setMealBookingAhead(days); }
-        catch (IllegalArgumentException e) { e.printStackTrace(); }
+        catch (IllegalArgumentException e) {
+            System.out.print("bookingBookPressed: ");
+            System.out.print(days);
+            e.printStackTrace();
+        }
         // TODO: need to set the advancebooking days here as well
         model.endMealBooking();
         book();
@@ -816,6 +853,7 @@ class MainController
     {
         MealCancelResponse mcr = new MealCancelResponse();
         try { mcr = model.cancel(Integer.parseInt(id)); } // Make sure it is a valid int
+        catch (SecurityFailedException sex) { displaySignInFail(); return; }
         catch (IOException e) { e.printStackTrace(); };
         setInfoAreaWithCancelResults(mcr);
 

@@ -189,6 +189,16 @@ class StubBookHttpClient implements IHttpClient
     public HttpResponse<String> send(HttpRequest request, BodyHandler bodyHandler) throws IOException
     {
         String uri = request.uri().toString();
+        HttpHeaders headers = request.headers();
+
+        Optional<String> cookies = headers.firstValue("Cookie");
+        if (!cookies.isPresent() || !cookies.get().equals("debug=cookie"))
+        {
+            this.setResponseFromString(200, "<html></html>");
+            return response;
+        }
+
+        System.out.println(headers.firstValue("Cookie"));
         if (uri.contains("get-meal-slots-dto"))
         {
             this.setResponseFromString(200, "[" +

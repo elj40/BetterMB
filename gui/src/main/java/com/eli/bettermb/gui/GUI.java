@@ -15,6 +15,14 @@ public class GUI
     static String sun_url = "https://web-apps.sun.ac.za";
 
     public static void main(String[] args) {
+
+        var env = System.getenv();
+        for (Map.Entry<String, String> e: map.entrySet())
+        {
+            System.out.println(sp);
+        }
+
+        System.exit(0);
         final int frameSizeFactor = 50;
         JFrame frame = new JFrame("BetterMB-GUI");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
