@@ -321,24 +321,4 @@ public class Client
 
         return meals;
     };
-    // Flushes the test server
-    // DO NOT USE OUTSIDE OF TESTING!
-    public void flushServer()
-    {
-        String urlSuffix = "/flush";
-        try
-        {
-            HttpRequest request = requestBuilder
-                .uri(URI.create(urlBase + urlSuffix))
-                .build();
-
-            HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-            Client.debug("[CLIENT] Flushing server: " + response.statusCode());
-        }
-        catch (ConnectException e) {
-            System.out.println("ERROR: Failed to connect, exiting");
-            System.exit(1);
-        }
-        catch (IOException e) { e.printStackTrace(); }
-    };
 };
