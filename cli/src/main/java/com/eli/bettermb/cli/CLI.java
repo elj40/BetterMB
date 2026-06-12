@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Comparator;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -47,7 +48,7 @@ class CLI
         CLI.debugging = shouldDebug;
         User.debugging = shouldDebug;
 
-        Client client = new Client(new HttpClientImpl());
+        Client client = new Client(new DefaultHttpClient());
         client.setUrlBase(sun_url);
 
         CLI cli = new CLI(System.in);
@@ -73,7 +74,8 @@ class CLI
         while (true)
         {
             System.out.print("> ");
-            command = scannerCLI.nextLine().trim();
+            try { command = scannerCLI.nextLine().trim(); }
+            catch (NoSuchElementException e) { System.out.println("EOF, exiting"); return; }
             args = new ArrayList<>(Arrays.asList(command.split(" ")));
 
             if (args.size() > 0) action = args.remove(0).trim();
@@ -171,7 +173,7 @@ class CLI
         catch (SecurityFailedException ex) {
             System.out.println("[security] Please sign in and try again");
             return; }
-        catch (IOException ex) {
+        catch (Exception ex) {
             System.out.println("[quota] Exception: " + ex.getMessage());
             return;
         }
@@ -208,6 +210,10 @@ class CLI
         catch (SecurityFailedException ex) {
             System.out.println("[security] Please sign in and try again");
             return; }
+        catch (InterruptedException ex) {
+            System.out.println("[cancel] Exception: " + ex.getMessage());
+            mcr = new MealCancelResponse();
+        }
         catch (IOException ex) {
             System.out.println("[cancel] Exception: " + ex.getMessage());
             mcr = new MealCancelResponse();
@@ -234,7 +240,7 @@ class CLI
             }
         }
         String cookies = null;
-        try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
+        try { cookies = client.getSecurityCookiesBySignIn(); }
         catch (Exception ex)
         {
             if (CLI.debugging) ex.printStackTrace();

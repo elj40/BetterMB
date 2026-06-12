@@ -179,7 +179,7 @@ class StubClient extends AbstractClient
 
 // Duplicate from client text fixtures
 // I hate this build system and these "best practices"
-class StubBookHttpClient implements IHttpClient
+class StubBookHttpClient implements HttpClientInterface
 {
     HttpResponse<String> response;
     boolean shouldThrowException = false;

@@ -5,15 +5,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.net.ConnectException;
 import java.net.URI;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
-import java.lang.reflect.Type;
+import java.util.Set; import java.lang.reflect.Type;
 
 import java.io.IOException;
-import java.net.ConnectException;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -36,18 +35,89 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+record Configuration (
+        boolean debugging,
+        URI entry,
+        URI target,
+        URI base,
+        URI quotaSummary,
+        URI bookedQuery,
+        URI slotsQuery,
+        URI facilitiesQuery,
+        URI optionsQuery,
+        URI bookRequest,
+        URI cancelRequest
+        )
+{
+    Configuration withDebug(boolean debug)
+    {
+        return new Configuration(
+                debug,
+                entry(),
+                target(),
+                base(),
+                quotaSummary(),
+                bookedQuery(),
+                slotsQuery(),
+                facilitiesQuery(),
+                optionsQuery(),
+                bookRequest(),
+                cancelRequest()
+                );
+    }
+    public static Configuration test = new Configuration(
+            true,
+            URI.create("http://127.0.0.1:8080/entry"),
+            URI.create("http://127.0.0.1:8080/target"),
+            URI.create("http://127.0.0.1:8080/"),
+            URI.create("quota/how-much-money/"),
+            URI.create("booked/what/do/I/eat/"),
+            URI.create("slots/get-more/"),
+            URI.create("facilities/get-more/"),
+            URI.create("options/get-more/"),
+            URI.create("book/get-more/"),
+            URI.create("cancel/I/dont/want/it/")
+            );
+    public static Configuration release = new Configuration(
+            false,
+            URI.create("https://my.sun.ac.za/api/tracker?linkID=239&lang=en"),
+            URI.create("https://web-apps.sun.ac.za"),
+            URI.create("https://web-apps.sun.ac.za/student-meal-booking/spring/api/"),
+            URI.create("get-quota-summary/en"),
+            URI.create("get-meal-bookings-dto/en/"),
+            URI.create("get-meal-slots-dto/"),
+            URI.create("get-meal-slot-facilities/en/"),
+            URI.create("get-meal-slot-facility-options/en/"),
+            URI.create("store-meal-booking/en"),
+            URI.create("cancel-meal-booking/en/")
+            );
+    public static Configuration devLive = Configuration.release.withDebug(true);
+}
+
+class Json
+{
+    public static final Gson gson = new Gson();
+    static <T> List<T> fromJsonList(String json, Class<T> type)
+    {
+        return gson.fromJson(json, TypeToken.getParameterized(List.class, type).getType());
+    }
+}
 // TODO: quota stuff
-// TODO: Should extract hard-coded links out
 public class Client
 {
     // NEW API, the changing API goes to show that we can't just hardcode things anymore
     // It will need to be hardcoded SOMEWHERE, but preferrably in some config at runtime
-    // https://my.sun.ac.za/api/tracker?linkID=239&lang=en
+
+    // These things dont really change throughout the lifetime of the program
     public static boolean debugging = true;
 
-    IHttpClient ihttpClient;
-    Gson gson = new Gson();
     String urlBase = null;
+
+    Configuration config = Configuration.devLive;
+
+    HttpClientInterface ihttpClient;
+    Gson gson = new Gson();
     String securityCookies = "default=cookie";
     public List<Exception> asyncExceptions = new ArrayList<>();
 
@@ -61,7 +131,7 @@ public class Client
     public Client()
     {
     };
-    public Client(IHttpClient _ihttpClient)
+    public Client(HttpClientInterface _ihttpClient)
     {
         ihttpClient = _ihttpClient;
     }
@@ -78,13 +148,13 @@ public class Client
     {
         return securityCookies;
     };
-    public void setHttpClient(IHttpClient newHttpClient)
+    public void setHttpClient(HttpClientInterface newHttpClient)
     {
         ihttpClient = newHttpClient;
     };
-    static void debug(String msg)
+    void debug(String msg)
     {
-        if (Client.debugging) System.out.println(msg);
+        if (config.debugging()) System.out.println(msg);
     };
     boolean ensureGoodResponse(HttpResponse<String> response)
             throws IOException, SecurityFailedException
@@ -95,26 +165,30 @@ public class Client
 
         return true;
     };
-    static public String getSecurityCookiesBySignIn(String entryUrl, String targetUrlStart)
+
+    public String getSecurityCookiesBySignIn()
             throws IOException, InterruptedException
     {
+        // TODO: IMPORTANT, this usually takes quite a while so the user is just left with
+        // a long empty load time. This setup should be handled better
         WebDriverManager.chromedriver().setup();
 
-        if (Client.debugging) Logger.getLogger("org.openqa.selenium").setLevel(Level.INFO);
+        if (config.debugging()) Logger.getLogger("org.openqa.selenium").setLevel(Level.INFO);
         else Logger.getLogger("org.openqa.selenium").setLevel(Level.SEVERE);
+
         WebDriver driver = new ChromeDriver();
         String securityCookies = "";
 
-        try { driver.get(entryUrl); }
+        try { driver.get(config.entry().toString()); }
         catch (Exception e) { throw e; }
         Thread.sleep(500);
         String currentUrl = driver.getCurrentUrl();
         while (true)
         {
             Thread.sleep(1000);
-            if (driver.getCurrentUrl().startsWith(targetUrlStart))
+            if (driver.getCurrentUrl().startsWith(config.target().toString()))
             {
-                Client.debug("[getSecurityCookiesBySignIn] On target page");
+                if (Client.debugging) System.out.println("[getSecurityCookiesBySignIn] On target page");
                 break;
             };
         };
@@ -128,197 +202,147 @@ public class Client
             securityCookies = securityCookies + "=";
             securityCookies = securityCookies + cookie.getValue();
         }
-        Client.debug("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
+        if (Client.debugging) System.out.println("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
         driver.quit();
         return securityCookies;
-    };
-    public QuotaSummary getQuotaSummary()
-            throws IOException, SecurityFailedException
+    }
+
+    <T> HttpResponse<T> sendHTTP(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
+        throws IOException, InterruptedException
     {
+        debug("[Client] Sending    : " + request.uri().toString());
+        HttpResponse<T> response = ihttpClient.send(request, responseBodyHandler);
+        debug("[Client] Status code: " + response.statusCode());
+        debug("[Client] Response   : " + response.body());
+        return response;
+    }
 
-        StringBuilder suffixSB = new StringBuilder();
-        suffixSB.append("/student-meal-booking/spring/api/get-quota-summary/en");
-        String urlSuffix = suffixSB.toString();
-
+    <T> List<T> requestDataList (URI requestURI, Class<T> dataClass)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
         HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
+            .uri(requestURI) // -> assuming valid URI from this
             .build();
+        HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
+        ensureGoodResponse(response);
+        return Json.fromJsonList(response.body(), dataClass);
+    }
 
-        Client.debug("[GetQuotaSummary] Sending " + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[GetQuotaSummary] Status code: " + response.statusCode());
-        Client.debug("[GetQuotaSummary] Response   : " + response.body());
-
+    public QuotaSummary getQuotaSummary()
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        URI uri = config.base().resolve(config.quotaSummary());
+        HttpRequest request = requestBuilder
+            .uri(uri)
+            .build();
+        HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
 
         QuotaSummary quotaSummary = gson.fromJson(response.body(), QuotaSummary.class);
         return quotaSummary;
     }
+
     public List<MealSlot> getAvailableMealSlots(String date)
-            throws IOException, SecurityFailedException
+            throws IOException, InterruptedException, SecurityFailedException
     {
-        StringBuilder suffixSB = new StringBuilder();
-        // TODO: assert that date is in correct format
-        suffixSB.append("/student-meal-booking/spring/api/get-meal-slots-dto/");
-        suffixSB.append(date);
-        suffixSB.append("/en");
-        String urlSuffix = suffixSB.toString();
+        URI uri = config.base()
+            .resolve(config.slotsQuery())
+            .resolve(date + "/")
+            .resolve("en");
 
-        HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
-            .build();
-
-        Client.debug("[GetAvailableMealSlots] Sending " + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[GetAvailableMealSlots] Status code: " + response.statusCode());
-        Client.debug("[GetAvailableMealSlots] Response   : " + response.body());
-
-        ensureGoodResponse(response);
-
-        Type mealSlotListType = new TypeToken<List<MealSlot>>() {}.getType();
-        List<MealSlot> mealSlots = gson.fromJson(response.body(), mealSlotListType);
-
-        if (mealSlots.getFirst().code == '0') mealSlots.removeFirst();
-
-        return mealSlots;
+        return requestDataList (uri, MealSlot.class)
+            .stream()
+            .dropWhile(m -> m.code == '0')
+            .toList();
     }
+
     public List<MealFacility> getAvailableMealFacilities(String date, char slot)
-            throws IOException, InterruptedException
+            throws IOException, InterruptedException, SecurityFailedException
     {
-        StringBuilder suffixSB = new StringBuilder();
-        suffixSB.append("/student-meal-booking/spring/api/get-meal-slot-facilities/en/");
-        suffixSB.append(date);
-        suffixSB.append("/");
-        suffixSB.append(slot);
-        String urlSuffix = suffixSB.toString();
+        URI uri = config.base()
+            .resolve(config.facilitiesQuery())
+            .resolve(date + "/")
+            .resolve(String.valueOf(slot) + "/");
 
-        HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
-            .build();
-
-        Client.debug("[GetAvailableMealFacilities] Sending " + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[GetAvailableMealFacilities] Status code: " + response.statusCode());
-        Client.debug("[GetAvailableMealFacilities] Response   : " + response.body());
-
-        ensureGoodResponse(response);
-
-        Type mealFacListType = new TypeToken<List<MealFacility>>() {}.getType();
-        List<MealFacility> mealFacs = gson.fromJson(response.body(), mealFacListType);
-
-        if (mealFacs.getFirst().code == 0) mealFacs.removeFirst();
-
-        return mealFacs;
+        return requestDataList (
+                uri,
+                MealFacility.class
+            ).stream()
+            .dropWhile(m -> m.code == 0)
+            .toList();
     }
-    public List<MealOption> getMealOptions(String date, char slot, int facility) throws IOException
+    public List<MealOption> getMealOptions(String date, char slot, int facility)
+            throws IOException, InterruptedException, SecurityFailedException
     {
-        StringBuilder suffixSB = new StringBuilder();
-        suffixSB.append("/student-meal-booking/spring/api/get-meal-slot-facility-options/en/");
-        suffixSB.append(date);
-        suffixSB.append("/"); suffixSB.append(slot);
-        suffixSB.append("/");
-        suffixSB.append(facility);
-        String urlSuffix = suffixSB.toString();
+        URI uri = config.base()
+            .resolve(config.optionsQuery())
+            .resolve(date + "/")
+            .resolve(String.valueOf(slot) + "/")
+            .resolve(String.valueOf(facility) + "/");
 
-        HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
-            .build();
-
-        Client.debug("[GetAvailableMeals] Sending " + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[GetAvailableMeals] Status code: " + response.statusCode());
-        Client.debug("[GetAvailableMeals] Response   : " + response.body());
-
-        ensureGoodResponse(response);
-
-        Type mealOptionListType = new TypeToken<List<MealOption>>() {}.getType();
-        List<MealOption> mealOptions = gson.fromJson(response.body(), mealOptionListType);
-
-        if (mealOptions.getFirst().code == 0) mealOptions.removeFirst();
-
-        return mealOptions;
+        return requestDataList (
+                uri,
+                MealOption.class
+            ).stream()
+            .dropWhile(m -> m.code == 0)
+            .toList();
     }
-    public List<MealBookingResponse> book(MealBookingOptions meal) throws IOException
+    public List<MealBookingResponse> book(MealBookingOptions meal)
+            throws IOException, InterruptedException, SecurityFailedException
     {
         String mealJson = gson.toJson(meal);
-        String urlSuffix = "/student-meal-booking/spring/api/store-meal-booking/en";
+        URI uri = config.base()
+            .resolve(config.bookRequest());
 
         HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
+            .uri(uri)
             .POST(BodyPublishers.ofString(mealJson))
             .setHeader("Content-Type", "application/json;charset=utf-8")
             .build();
 
-        Client.debug("[Book] Sending: " + mealJson);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[Book] Status code: " + response.statusCode());
-        Client.debug("[Book] Response   : " + response.body());
-
+        HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
 
-        Type mealBookingResponseListType = new TypeToken<List<MealBookingResponse>>() {}.getType();
-        List<MealBookingResponse> mealBookingResponses = gson.fromJson(response.body(), mealBookingResponseListType);
+        return Json.fromJsonList(response.body(), MealBookingResponse.class);
+    }
 
-        return mealBookingResponses;
-    };
-    public MealCancelResponse cancel(int mealId) throws IOException
+    public MealCancelResponse cancel(int mealId)
+            throws IOException, InterruptedException, SecurityFailedException
     {
-        StringBuilder suffixSB = new StringBuilder();
-        suffixSB.append("/student-meal-booking/spring/api/cancel-meal-booking/en/");
-        suffixSB.append(mealId);
-        String urlSuffix = suffixSB.toString();
-
-        MealCancelResponse mealCancelResponse = new MealCancelResponse();
+        URI uri = config.base()
+            .resolve(config.cancelRequest())
+            .resolve(String.valueOf(mealId));
 
         HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
+            .uri(uri)
             .build();
 
-        Client.debug("[Cancel] Sending " + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[Cancel] Status code: " + response.statusCode());
-        Client.debug("[Cancel] Response   : " + response.body());
-
+        HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
 
-        mealCancelResponse = gson.fromJson(response.body(), MealCancelResponse.class);
-
-        return mealCancelResponse;
+        return gson.fromJson(response.body(), MealCancelResponse.class);
     }
+
     public CompletableFuture<List<Meal>> getMealsBookedInMonthAsync(String date)
     {
         return CompletableFuture.supplyAsync(() -> {
             try { return getMealsBookedInMonth(date); }
             catch (Exception ex)
             {
-                if (Client.debugging) ex.printStackTrace();
+                if (debugging) ex.printStackTrace();
                 asyncExceptions.add(ex);
                 return null;
             }
         });
     };
-    public List<Meal> getMealsBookedInMonth(String date) throws IOException
+    public List<Meal> getMealsBookedInMonth(String date)
+            throws IOException, InterruptedException
     {
-        StringBuilder suffixSB = new StringBuilder();
-        suffixSB.append("/student-meal-booking/spring/api/get-meal-bookings-dto/en/");
-        suffixSB.append(date);
-        String urlSuffix = suffixSB.toString();
+        // suffixSB.append("/student-meal-booking/spring/api/get-meal-bookings-dto/en/");
+        URI uri = config.base()
+            .resolve(config.bookedQuery())
+            .resolve(date + "/");
 
-        HttpRequest request = requestBuilder
-            .uri(URI.create(urlBase + urlSuffix))
-            .GET()
-            .build();
-
-        Client.debug("[GetMealsBookedInMonth] Sending " + urlBase + urlSuffix);
-        HttpResponse<String> response = ihttpClient.send(request, BodyHandlers.ofString());
-        Client.debug("[GetMealsBookedInMonth] Status code: " + response.statusCode());
-        Client.debug("[GetMealsBookedInMonth] Response   : " + response.body());
-
-        ensureGoodResponse(response);
-
-        Type mealListType = new TypeToken<List<Meal>>() {}.getType();
-        List<Meal> meals = gson.fromJson(response.body(), mealListType);
-
-        return meals;
+        return requestDataList(uri, Meal.class);
     };
 };

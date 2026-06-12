@@ -1,7 +1,7 @@
 package com.eli.bettermb.gui;
 
 import com.eli.bettermb.client.Client;
-import com.eli.bettermb.client.HttpClientImpl;
+import com.eli.bettermb.client.DefaultHttpClient;
 
 import java.util.Map;
 

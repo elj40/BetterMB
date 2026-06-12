@@ -1,4 +1,4 @@
-import com.eli.bettermb.client.*;
+package com.eli.bettermb.client;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.io.IOException;
 
-class StubBookHttpClient implements IHttpClient
+class StubBookHttpClient implements HttpClientInterface
 {
     HttpResponse<String> response;
     boolean shouldThrowException = false;

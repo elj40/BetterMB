@@ -189,11 +189,12 @@ class MainModel
     void tryGetMealsBookedInMonth(String date)
     {
         try { mergeMeals(client.getMealsBookedInMonth(date)); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
         catch (IOException e) { System.out.println("[tryGetMealsBookedInMonth] failed: " + e.toString()); }
     }
 
     List<MealBookingResponse> bookSync()
-        throws IOException
+        throws IOException, InterruptedException
     {
         List<MealBookingResponse> responses = client.book(mealBookingOptions);
         List<Meal> newMeals = client.getMealsBookedInMonth(mealBookingOptions.mealDate);
@@ -211,7 +212,8 @@ class MainModel
         return new BookAsyncResult(responses, futureMeals);
     };
 
-    MealCancelResponse cancel(int id) throws IOException
+    MealCancelResponse cancel(int id)
+            throws IOException, InterruptedException
     {
         MealCancelResponse mcr = client.cancel(id);
         if (mcr.success) removeMealByID(id);
@@ -378,7 +380,7 @@ class MainModel
     }
 
     String[] getAvailableMealOptions(String facilityDescription)
-        throws IOException
+            throws IOException, InterruptedException
     {
         if (!FacilityCodeMap.containsKey(facilityDescription)) throw new IllegalArgumentException();
 
@@ -526,7 +528,7 @@ class MainController
     void signIn(String signin_entry, String signin_target)
     {
         String cookies = null;
-        try { cookies = Client.getSecurityCookiesBySignIn(signin_entry, signin_target); }
+        try { cookies = model.client.getSecurityCookiesBySignIn(); }
         catch (Exception ex)
         {
             System.err.println("[signin] Failed to sign in: " + ex.getMessage());
@@ -784,6 +786,7 @@ class MainController
             e.printStackTrace();
             return;
         }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
         catch (IOException e) { e.printStackTrace(); return; }
 
         // TODO: use model to see if it was valid
@@ -854,6 +857,7 @@ class MainController
         MealCancelResponse mcr = new MealCancelResponse();
         try { mcr = model.cancel(Integer.parseInt(id)); } // Make sure it is a valid int
         catch (SecurityFailedException sex) { displaySignInFail(); return; }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
         catch (IOException e) { e.printStackTrace(); };
         setInfoAreaWithCancelResults(mcr);
 

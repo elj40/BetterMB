@@ -41,9 +41,8 @@ class ClientBookTest
         mbo.advanceBookingDays = 0;
     };
     @Test
-    void testBookSuccess()
-    {
-        stub.setResponseFromString(200, "[ " +
+    void testBookSuccess() {
+        stub.setResponseFromString(200, "[" +
                 "{\"bookingDate\":" + date + " ,\"bookingMessage\":\"Booking successful\"}" +
                 " ]");
         client.setHttpClient(stub);
