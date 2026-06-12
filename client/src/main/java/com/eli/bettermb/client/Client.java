@@ -40,6 +40,9 @@ import java.util.logging.Logger;
 // TODO: Should extract hard-coded links out
 public class Client
 {
+    // NEW API, the changing API goes to show that we can't just hardcode things anymore
+    // It will need to be hardcoded SOMEWHERE, but preferrably in some config at runtime
+    // https://my.sun.ac.za/api/tracker?linkID=239&lang=en
     public static boolean debugging = true;
 
     IHttpClient ihttpClient;

@@ -12,3 +12,4 @@ rootProject.name = 'BetterMB'
 include('client')
 include('cli')
 include('gui')
+include('foo')
