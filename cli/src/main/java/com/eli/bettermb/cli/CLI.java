@@ -49,7 +49,6 @@ class CLI
         User.debugging = shouldDebug;
 
         Client client = new Client(new DefaultHttpClient());
-        client.setUrlBase(sun_url);
 
         CLI cli = new CLI(System.in);
         cli.setClient(client);

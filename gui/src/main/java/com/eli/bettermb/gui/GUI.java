@@ -25,7 +25,6 @@ public class GUI
         //Client client = new Client(new HttpClientImpl());
         Client client = new Client(new StubBookHttpClient());
         Client.debugging = false;
-        client.setUrlBase(sun_url);
 
         MainView view = new MainView();
         MainModel model = new MainModel(client);

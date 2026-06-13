@@ -112,8 +112,6 @@ public class Client
     // These things dont really change throughout the lifetime of the program
     public static boolean debugging = true;
 
-    String urlBase = null;
-
     Configuration config = Configuration.devLive;
 
     HttpClientInterface ihttpClient;
@@ -134,10 +132,6 @@ public class Client
     public Client(HttpClientInterface _ihttpClient)
     {
         ihttpClient = _ihttpClient;
-    }
-    public void setUrlBase(String urlb)
-    {
-        urlBase = urlb;
     }
     public void setCookies(String newCookies)
     {
