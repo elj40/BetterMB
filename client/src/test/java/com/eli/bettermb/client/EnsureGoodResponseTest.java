@@ -21,7 +21,6 @@ class ClientEnsureGoodResponseTest
         client = new Client();
         stub = new CustomStubHttpClient();
         Client.debugging = false;
-        client.setUrlBase("http://127.0.0.1");
         client.setHttpClient(stub);
     };
     //@Test

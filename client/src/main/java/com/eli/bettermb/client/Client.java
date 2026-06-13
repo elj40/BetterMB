@@ -30,6 +30,7 @@ import com.google.gson.JsonSyntaxException;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 import java.util.logging.Level;
@@ -42,6 +43,10 @@ record Configuration (
         URI target,
         URI base,
         URI quotaSummary,
+        URI quotaIncreaseRequest,
+        URI quotaDecreaseRequest,
+        URI cobIncreaseRequest,
+        URI cobDecreaseRequest,
         URI bookedQuery,
         URI slotsQuery,
         URI facilitiesQuery,
@@ -58,6 +63,10 @@ record Configuration (
                 target(),
                 base(),
                 quotaSummary(),
+                quotaIncreaseRequest(),
+                quotaDecreaseRequest(),
+                cobIncreaseRequest(),
+                cobDecreaseRequest(),
                 bookedQuery(),
                 slotsQuery(),
                 facilitiesQuery(),
@@ -72,6 +81,10 @@ record Configuration (
             URI.create("http://127.0.0.1:8080/target"),
             URI.create("http://127.0.0.1:8080/"),
             URI.create("quota/how-much-money/"),
+            URI.create("quota/increase/"),
+            URI.create("quota/decrease/"),
+            URI.create("cob/increase/"),
+            URI.create("cob/decrease/"),
             URI.create("booked/what/do/I/eat/"),
             URI.create("slots/get-more/"),
             URI.create("facilities/get-more/"),
@@ -85,6 +98,10 @@ record Configuration (
             URI.create("https://web-apps.sun.ac.za"),
             URI.create("https://web-apps.sun.ac.za/student-meal-booking/spring/api/"),
             URI.create("get-quota-summary/en"),
+            URI.create("increase-quota/en/"),
+            URI.create("decrease-quota/en/"), // Guess
+            URI.create("increase-cob/en/"),
+            URI.create("decrease-cob/en/"), // Guess
             URI.create("get-meal-bookings-dto/en/"),
             URI.create("get-meal-slots-dto/"),
             URI.create("get-meal-slot-facilities/en/"),
@@ -112,7 +129,7 @@ public class Client
     // These things dont really change throughout the lifetime of the program
     public static boolean debugging = true;
 
-    Configuration config = Configuration.devLive;
+    public Configuration config = Configuration.devLive;
 
     HttpClientInterface ihttpClient;
     String securityCookies = "default=cookie";
@@ -169,7 +186,12 @@ public class Client
         if (config.debugging()) Logger.getLogger("org.openqa.selenium").setLevel(Level.INFO);
         else Logger.getLogger("org.openqa.selenium").setLevel(Level.SEVERE);
 
-        WebDriver driver = new ChromeDriver();
+        ChromeOptions options = new ChromeOptions();
+        // TODO: IMPORTANT This profile is hard-coded and wont work anywhere else
+        // if (config.debugging()) options.addArguments("user-data-dir=/home/eli/.config/google-chrome/");
+
+        WebDriver driver = new ChromeDriver(options);
+
         String securityCookies = "";
 
         try { driver.get(config.entry().toString()); }
@@ -234,6 +256,49 @@ public class Client
         QuotaSummary quotaSummary = Json.gson.fromJson(response.body(), QuotaSummary.class);
         return quotaSummary;
     }
+
+    public SimpleResponse quotaChangeHelper(URI changeEndpoint, int amountInCents)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        URI uri = config.base()
+            .resolve(changeEndpoint)
+            .resolve(String.valueOf(amountInCents));
+
+        HttpRequest request = requestBuilder
+            .uri(uri)
+            .build();
+
+        HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
+        ensureGoodResponse(response);
+
+        SimpleResponse quotaResponse = Json.gson.fromJson(response.body(), SimpleResponse.class);
+        return quotaResponse;
+    }
+
+    public SimpleResponse quotaIncrease(int amountInCents)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        return quotaChangeHelper(config.quotaIncreaseRequest(), amountInCents);
+    }
+
+    public SimpleResponse quotaDecrease(int amountInCents)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        return quotaChangeHelper(config.quotaDecreaseRequest(), amountInCents);
+    }
+
+    public SimpleResponse cobIncrease(int amountInCents)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        return quotaChangeHelper(config.cobIncreaseRequest(), amountInCents);
+    }
+
+    public SimpleResponse cobDecrease(int amountInCents)
+            throws IOException, InterruptedException, SecurityFailedException
+    {
+        return quotaChangeHelper(config.cobDecreaseRequest(), amountInCents);
+    }
+
 
     public List<MealSlot> getAvailableMealSlots(String date)
             throws IOException, InterruptedException, SecurityFailedException

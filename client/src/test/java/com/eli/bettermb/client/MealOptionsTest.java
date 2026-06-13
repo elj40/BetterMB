@@ -27,7 +27,6 @@ class ClientMealOptionsTest
         client = new Client();
         stub = new CustomStubHttpClient();
         client.setCookies(Common.securityCookies);
-        client.setUrlBase("http://127.0.0.1");
         Client.debugging = false;
 
         stub.setResponseFromString(200, "[ " +
