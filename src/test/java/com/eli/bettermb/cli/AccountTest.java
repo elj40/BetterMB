@@ -1,5 +1,7 @@
 package com.eli.bettermb.cli;
 
+import com.eli.bettermb.client.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
