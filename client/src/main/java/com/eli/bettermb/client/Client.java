@@ -115,7 +115,6 @@ public class Client
     Configuration config = Configuration.devLive;
 
     HttpClientInterface ihttpClient;
-    Gson gson = new Gson();
     String securityCookies = "default=cookie";
     public List<Exception> asyncExceptions = new ArrayList<>();
 
@@ -232,7 +231,7 @@ public class Client
         HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
 
-        QuotaSummary quotaSummary = gson.fromJson(response.body(), QuotaSummary.class);
+        QuotaSummary quotaSummary = Json.gson.fromJson(response.body(), QuotaSummary.class);
         return quotaSummary;
     }
 
@@ -284,7 +283,7 @@ public class Client
     public List<MealBookingResponse> book(MealBookingOptions meal)
             throws IOException, InterruptedException, SecurityFailedException
     {
-        String mealJson = gson.toJson(meal);
+        String mealJson = Json.gson.toJson(meal);
         URI uri = config.base()
             .resolve(config.bookRequest());
 
@@ -314,7 +313,7 @@ public class Client
         HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
 
-        return gson.fromJson(response.body(), MealCancelResponse.class);
+        return Json.gson.fromJson(response.body(), MealCancelResponse.class);
     }
 
     public CompletableFuture<List<Meal>> getMealsBookedInMonthAsync(String date)
