@@ -1,0 +1,124 @@
+package com.eli.bettermb.cli;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+import java.util.List;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import java.io.ByteArrayOutputStream;
+
+import java.io.IOException;
+import java.net.ConnectException;
+
+class QuotaTest
+{
+    ByteArrayOutputStream out;
+    CLI cli;
+    CustomStubHttpClient stub;
+    QuotaSummary quota;
+    @BeforeEach
+    void setup()
+    {
+        cli = new CLI(System.in, out);
+        cli.client.config = test;
+        stub = new CustomStubHttpClient();
+        quota = new QuotaSummary();
+        stub.shouldThrowException = false;
+    };
+    @Test
+    void testQuotaIncrease()
+    {
+        String responseString = "{" +
+            "\"quotaPendingMessage\": null," +
+            "\"currentQuotaDesc\": \"R21000.00\"," +
+            "\"cobQuotaDesc\": \"R0\"," +
+            "\"balanceDesc\": \"R1730.86\"," +
+            "\"mealUsageDesc\": null," +
+            "\"quotaIncreaseDTO\": []," +
+            "\"quotaDecreaseDTO\": []," +
+            "\"cobIncreaseDTO\": []," +
+            "\"cobDecreaseDTO\": []" +
+            "}";
+        stub.setResponseFromString(200, responseString);
+        cli.client.setHttpClient(stub);
+
+        String[] args = {"quota", "increase", "100"};
+
+        assertDoesNotThrow(() -> { cli.account(); });
+        System.out.println(out.toString());
+    };
+    @Test
+    void testGetQuotaSummaryFull()
+    {
+        String responseString = """
+        {
+            "quotaPendingMessage": null,
+            "currentQuotaDesc": "R16000.00",
+            "cobQuotaDesc": "R0",
+            "balanceDesc": "R3157.80",
+            "mealUsageDesc": null,
+            "quotaIncreaseDTO": [
+            { "quotaIncreaseCode": 50000, "quotaIncreaseAmount": "R500.00" },
+            { "quotaIncreaseCode": 100000, "quotaIncreaseAmount": "R1000.00" },
+            { "quotaIncreaseCode": 200000, "quotaIncreaseAmount": "R2000.00" },
+            { "quotaIncreaseCode": 400000, "quotaIncreaseAmount": "R4000.00" }
+            ],
+            "quotaDecreaseDTO": [
+            { "quotaDecreaseCode": 50000, "quotaDecreaseAmount": "R500.00" },
+            { "quotaDecreaseCode": 100000, "quotaDecreaseAmount": "R1000.00" },
+            { "quotaDecreaseCode": 200000, "quotaDecreaseAmount": "R2000.00" },
+            { "quotaDecreaseCode": 315780, "quotaDecreaseAmount": "R3157.80" }
+            ],
+            "cobIncreaseDTO": [
+            { "cobIncreaseCode": 10000, "cobIncreaseAmount": "R100.00" },
+            { "cobIncreaseCode": 20000, "cobIncreaseAmount": "R200.00" },
+            { "cobIncreaseCode": 40000, "cobIncreaseAmount": "R400.00" },
+            { "cobIncreaseCode": 80000, "cobIncreaseAmount": "R800.00" },
+            { "cobIncreaseCode": 160000, "cobIncreaseAmount": "R1600.00" },
+            { "cobIncreaseCode": 315780, "cobIncreaseAmount": "R3157.80" }
+            ],
+            "cobDecreaseDTO": [
+            { "cobDecreaseCode": 0, "cobDecreaseAmount": "R0" }
+            ]
+        }
+        """;
+        stub.setResponseFromString(200, responseString);
+        client.setHttpClient(stub);
+        assertDoesNotThrow(() -> { quota = client.getQuotaSummary(); });
+        assertNull(quota.quotaPendingMessage);
+        assertEquals(quota.quotaPendingMessage, null);
+        assertEquals(quota.currentQuotaDesc, "R16000.00");
+        assertEquals(quota.cobQuotaDesc, "R0");
+        assertEquals(quota.balanceDesc, "R3157.80");
+        assertEquals(quota.mealUsageDesc, null);
+        assertNotNull(quota.quotaIncreaseDTO);
+        assertNotNull(quota.cobIncreaseDTO);
+        assertEquals(quota.cobIncreaseDTO.getLast().cobIncreaseCode, 315780);
+    };
+    @Test
+    void testSingleSignOnResponse()
+    {
+        stub.setResponseFromString(200,
+                "<!DOCTYPE html><html><body>Single Sign-on</body></html>");
+        client.setHttpClient(stub);
+        assertThrows(SecurityFailedException.class, () -> client.getQuotaSummary());
+    };
+    @Test
+    void testResourceMovedResponse()
+    {
+        stub.setResponseFromString(403,
+                "<!DOCTYPE html><html><body>403: resource is no longer here</body></html>");
+        client.setHttpClient(stub);
+        assertThrows(SecurityFailedException.class, () -> client.getQuotaSummary());
+    };
+
+}

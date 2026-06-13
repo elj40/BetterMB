@@ -9,6 +9,21 @@ base {
     archivesName = "bettermb-gui"
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['../src/main/java/']
+            include 'com/eli/bettermb/gui/**'
+        }
+    }
+    test {
+        java {
+            srcDirs = ['../src/test/java/']
+            include 'com/eli/bettermb/gui/**'
+        }
+    }
+}
+
 task runForJdb(type: JavaExec) {
     group = 'application'
     description = 'Run app with JDWP agent for jdb attachment'

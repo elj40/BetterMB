@@ -7,8 +7,23 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    main { java
+    {
+        srcDirs = ['../src/main/java/']
+        include 'com/eli/bettermb/client/**'
+    } }
+    test { java {
+        srcDirs = ['../src/test/java/']
+        include 'com/eli/bettermb/client/**'
+    } }
+    testFixtures { java {
+        srcDirs = ['../src/testFixtures/java/']
+        include 'com/eli/bettermb/client/**'
+    } }
+}
+
 group = "com.eli"
-version = "1.1.0"
 
 dependencies {
     testImplementation libs.junit.jupiter
@@ -32,3 +47,4 @@ tasks.named('test') {
     useJUnitPlatform()
     reports.html.required = false
 }
+

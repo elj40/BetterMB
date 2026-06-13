@@ -9,6 +9,21 @@ base {
     archivesName = "bettermb-cli"
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['../src/main/java/']
+            include 'com/eli/bettermb/cli/**'
+        }
+    }
+    test {
+        java {
+            srcDirs = ['../src/test/java/']
+            include 'com/eli/bettermb/cli/**'
+        }
+    }
+}
+
 group = "com.eli"
 version = "1.1.0"
 
