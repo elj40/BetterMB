@@ -15,6 +15,7 @@ import java.time.DayOfWeek;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.PrintStream;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -33,13 +34,10 @@ class CLI
     String signin_entry = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
     String signin_target = "https://web-apps.sun.ac.za";
 
-    static String sun_url = "https://web-apps.sun.ac.za";
-    static String mysun_link = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
-    static String sun_entry_url = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
-    static String sun_target_url = sun_url;
-
     private boolean asyncSecurityFlag = false;
     private String earliestDate = "9999-99-99";
+
+    PrintStream out;
 
     public static void main(String[] args) throws IOException,InterruptedException
     {
@@ -49,16 +47,18 @@ class CLI
         User.debugging = shouldDebug;
 
         Client client = new Client(new DefaultHttpClient());
+        client.config = Configuration.release;
 
-        CLI cli = new CLI(System.in);
+        CLI cli = new CLI(System.in, System.out);
         cli.setClient(client);
 
         cli.main();
     };
-    CLI(java.io.InputStream stream)
+    CLI(java.io.InputStream stream, PrintStream outStream)
     {
         scannerCLI = new ScannerCLI(stream);
         user = new User();
+        out = outStream;
     };
     public void setClient(Client c)
     {
@@ -72,22 +72,25 @@ class CLI
         String[] argsArray = new String[0];
         while (true)
         {
-            System.out.print("> ");
+            out.print("> ");
             try { command = scannerCLI.nextLine().trim(); }
-            catch (NoSuchElementException e) { System.out.println("EOF, exiting"); return; }
+            catch (NoSuchElementException e) { out.println("EOF, exiting"); return; }
             args = new ArrayList<>(Arrays.asList(command.split(" ")));
 
+            // args do not include the original command
             if (args.size() > 0) action = args.remove(0).trim();
             else action = "";
 
+            String[] argsArr = args.toArray(argsArray);
+
             if (action.equals("quit")) this.quit();
-            else if (action.equals("show")) this.show(args.toArray(argsArray));
-            else if (action.equals("book")) this.book(args.toArray(argsArray));
-            else if (action.equals("cancel")) this.cancel(args.toArray(argsArray));
-            else if (action.equals("signin")) this.signin(args.toArray(argsArray));
-            else if (action.equals("quota")) this.quota(args.toArray(argsArray));
-            else if (action.equals("cookie")) this.cookie(args.toArray(argsArray));
-            else if (action.equals("student")) this.student(args.toArray(argsArray));
+            else if (action.equals("show")) this.show(argsArr);
+            else if (action.equals("book")) this.book(argsArr);
+            else if (action.equals("cancel")) this.cancel(argsArr);
+            else if (action.equals("signin")) this.signin(argsArr);
+            else if (action.equals("account")) this.account(argsArr);
+            else if (action.equals("cookie")) this.cookie(argsArr);
+            else if (action.equals("student")) this.student(argsArr);
             else if (action.equals("help")) this.help();
             else if (action.isEmpty()) action = "";
             else this.help();
@@ -96,7 +99,7 @@ class CLI
     void updateUserMealsAsync(String date)
     {
         earliestDate = date;
-        System.out.println("[cli] Sending request to update meals");
+        out.println("[cli] Sending request to update meals");
         CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(date);
         waiter.markNotDone();
         futureMeals.thenAccept(result -> {
@@ -111,8 +114,8 @@ class CLI
     {
         if (asyncSecurityFlag)
         {
-            System.out.println("[security] ERROR: could not retrieve meals");
-            System.out.println("[security] (hint: try the \"signin\" command)");
+            out.println("[security] ERROR: could not retrieve meals");
+            out.println("[security] (hint: try the \"signin\" command)");
             //asyncSecurityFlag = false;
             return;
         }
@@ -124,8 +127,8 @@ class CLI
             if (scannerCLI.checkDate(arg)) {
                 date = arg;
             } else {
-                System.out.println("[show] Invalid argument:        " + arg);
-                System.out.println("[show] Expected date in format: yyyy-mm-dd");
+                out.println("[show] Invalid argument:        " + arg);
+                out.println("[show] Expected date in format: yyyy-mm-dd");
                 return;
             }
         } else date = today;
@@ -135,18 +138,18 @@ class CLI
             updateUserMealsAsync(date);
         };
 
-        System.out.println("[show] Showing booked meals from " + date + "...");
-        System.out.println();
+        out.println("[show] Showing booked meals from " + date + "...");
+        out.println();
 
         try { waiter.waitUntilDone(); }
         catch (InterruptedException e)
         {
-            System.out.println("[show] Received interrupt, escaping");
+            out.println("[show] Received interrupt, escaping");
             return;
         }
 
         List<Meal> meals = new ArrayList<>();
-        System.out.println(MealDisplay.headers());
+        out.println(MealDisplay.headers());
         meals = user.getMealsBookedFrom(date);
 
         meals.sort(Comparator.comparing(m -> m.start));
@@ -157,40 +160,121 @@ class CLI
         {
             mealD = MealDisplay.fromMeal(meals.get(i));
 
-            if (i > 0 && !pmealD.date.equals(mealD.date)) System.out.println("");
-            System.out.println(String.format("%02d. %s", i, mealD.toString()));
+            if (i > 0 && !pmealD.date.equals(mealD.date)) out.println("");
+            out.println(String.format("%02d. %s", i, mealD.toString()));
 
             pmealD = MealDisplay.fromMeal(meals.get(i));
         }
-        System.out.println("");
+        out.println("");
     };
-    public void quota(String[] args)
+    public void account(String[] args)
     {
-        System.out.println("[quota] Fetching quota summary");
-        QuotaSummary qs = null;
-        try { qs = client.getQuotaSummary(); }
-        catch (SecurityFailedException ex) {
-            System.out.println("[security] Please sign in and try again");
-            return; }
-        catch (Exception ex) {
-            System.out.println("[quota] Exception: " + ex.getMessage());
-            return;
-        }
+        // account summary
+        //         quota +number
+        //               -numer
+        //         cob   +number
+        //               -number
+        if (args.length == 1 && args[0].trim().toLowerCase().equals("summary"))
+        {
+            out.println("[account] Fetching quota summary");
+            QuotaSummary qs = null;
+            try { qs = client.getQuotaSummary(); }
+            catch (SecurityFailedException ex) {
+                out.println("[security] Please sign in and try again");
+                return; }
+            catch (Exception ex) {
+                out.println("[account] Exception: " + ex.getMessage());
+                return;
+            }
 
-        System.out.println("Quota Summary:");
-        if (qs.currentQuotaDesc != null) System.out.println("    current quota - " + qs.currentQuotaDesc);
-        if (qs.cobQuotaDesc != null) System.out.println("    cob quota     - " + qs.cobQuotaDesc);
-        if (qs.balanceDesc != null)  System.out.println("    balance       - " + qs.balanceDesc);
-        if (qs.mealUsageDesc != null) System.out.println("    mealUsage     - " + qs.mealUsageDesc);
-        if (qs.quotaPendingMessage != null) System.out.println("    quotaPending  - " + qs.quotaPendingMessage);
+            out.println("Quota Summary:");
+            if (qs.currentQuotaDesc != null) out.println("    current quota - " + qs.currentQuotaDesc);
+            if (qs.cobQuotaDesc != null) out.println("    cob quota     - " + qs.cobQuotaDesc);
+            if (qs.balanceDesc != null)  out.println("    balance       - " + qs.balanceDesc);
+            if (qs.mealUsageDesc != null) out.println("    mealUsage     - " + qs.mealUsageDesc);
+            if (qs.quotaPendingMessage != null) out.println("    quotaPending  - " + qs.quotaPendingMessage);
+        } else if (args.length == 2)
+        {
+            final int QUOTA = 0;
+            final int COB = 1;
+            String accountCategoryString = args[0].trim().toLowerCase();
+            int accountCategory = -1;
+            if ("quota".equals(accountCategoryString)) { accountCategory = QUOTA; }
+            else if ("cob".equals(accountCategoryString)) { accountCategory = COB; }
+            else
+            {
+                out.println("[account] Failed to parse first argument: " + accountCategory);
+                out.println("[account] Expected: 'quota' or 'cob'");
+                return;
+            }
+
+            float amount = 0;
+            String arg = args[1].trim();
+            try {
+                amount = Float.parseFloat(arg);
+            } catch (java.lang.NumberFormatException ex) {
+                out.println("[account] Invalid argument: " + arg);
+                out.println("[account] Expected amount in rands (excluding R)");
+                return;
+            }
+
+            out.println("[account] Requesting to change " +
+                    accountCategoryString +
+                    " by: " + String.valueOf(amount) + " ...");
+
+            SimpleResponse response = null;
+            int amountInCents = Math.round(amount * 100);
+            try
+            {
+                boolean increase = amountInCents > 0;
+                if (accountCategory == QUOTA)
+                {
+                    if (increase) response = client.quotaIncrease(amountInCents);
+                    else response = client.quotaDecrease(-amountInCents);
+                }
+                else if (accountCategory == COB)
+                {
+                    if (increase) response = client.cobIncrease(amountInCents);
+                    else response = client.cobDecrease(-amountInCents);
+                }
+                else
+                {
+                    throw new IOException("UNREACHABLE");
+                }
+            }
+            catch (SecurityFailedException ex) {
+                out.println("[security] Please sign in and try again");
+                return;
+            }
+            catch (InterruptedException ex) {
+                out.println("[account] Exception: " + ex.getMessage());
+                return;
+            }
+            catch (IOException ex) {
+                out.println("[account] Exception: " + ex.getMessage());
+                return;
+            }
+
+            out.println("[account] " + stringFromSimpleResponse(response));
+        } else
+        {
+            out.println("""
+                    Usage: account < summary > | < (quota | cob) amount >
+                        amount is written in rands as +/- a number
+                        e.g
+                        Get balance details: account summary
+                        Increase/decrease  : account quota -100.00
+                    """);
+        }
     };
+
     public void cancel(String[] args)
     {
         int id = -1;
         if (args.length != 1)
         {
-            System.out.println("[cancel] ERROR: incorrect number of arguments");
-            System.out.println("[cancel] usage: cancel [meal_id]");
+            out.println("[cancel] ERROR: incorrect number of arguments");
+            out.println("[cancel] usage: cancel [meal_id]");
             return;
         };
 
@@ -198,27 +282,27 @@ class CLI
         try {
             id = Integer.parseInt(arg);
         } catch (java.lang.NumberFormatException ex) {
-            System.out.println("[cancel] Invalid argument:        " + arg);
-            System.out.println("[cancel] Expected id in format: 1234567");
+            out.println("[cancel] Invalid argument:        " + arg);
+            out.println("[cancel] Expected id in format: 1234567");
             return;
         }
 
-        System.out.println("[cancel] Cancelling meal with ID: " + String.valueOf(id) + "...");
+        out.println("[cancel] Cancelling meal with ID: " + String.valueOf(id) + "...");
         MealCancelResponse mcr = null;
         try { mcr = client.cancel(id); }
         catch (SecurityFailedException ex) {
-            System.out.println("[security] Please sign in and try again");
+            out.println("[security] Please sign in and try again");
             return; }
         catch (InterruptedException ex) {
-            System.out.println("[cancel] Exception: " + ex.getMessage());
+            out.println("[cancel] Exception: " + ex.getMessage());
             mcr = new MealCancelResponse();
         }
         catch (IOException ex) {
-            System.out.println("[cancel] Exception: " + ex.getMessage());
+            out.println("[cancel] Exception: " + ex.getMessage());
             mcr = new MealCancelResponse();
         }
 
-        System.out.println("[cancel] " + mealCancelResponseString(mcr));
+        out.println("[cancel] " + mealCancelResponseString(mcr));
 
         String today = LocalDate.now().format(dateFormatter);
         updateUserMealsAsync(today);
@@ -234,8 +318,8 @@ class CLI
                 su = Integer.parseInt(arg);
                 checkArg = true;
             } catch (java.lang.NumberFormatException ex) {
-                System.out.println("[signin] Invalid argument:        " + arg);
-                System.out.println("[signin] Expected SU in format: 12345678");
+                out.println("[signin] Invalid argument:        " + arg);
+                out.println("[signin] Expected SU in format: 12345678");
             }
         }
         String cookies = null;
@@ -243,7 +327,7 @@ class CLI
         catch (Exception ex)
         {
             if (CLI.debugging) ex.printStackTrace();
-            System.out.println("[signin] Failed to sign in");
+            out.println("[signin] Failed to sign in");
             return;
         }
         client.setCookies(cookies);
@@ -251,7 +335,7 @@ class CLI
         updateUserMealsAsync(today);
 
         if (!checkArg) {
-            System.out.println("Enter an SU number to save bookings (optional): ");
+            out.println("Enter an SU number to save bookings (optional): ");
             su = scannerCLI.nextIntRangedWithDefault((int) 2e7, (int) 10e7, 0);
         }
 
@@ -262,20 +346,20 @@ class CLI
     {
         if (user.studentNumber == 0)
         {
-            System.out.println("[quit] Anonymous session: not saving");
+            out.println("[quit] Anonymous session: not saving");
         } else
         {
             String pathString = "data/"+Integer.toString(user.studentNumber)+"_meals.json";
-            System.out.println("[quit] Saving data to " + pathString);
+            out.println("[quit] Saving data to " + pathString);
             try {
             user.saveToFile(user.meals, pathString);
             } catch (IOException ex)
             {
-                System.out.println("[quit] Failed to save: " + ex.getMessage());
+                out.println("[quit] Failed to save: " + ex.getMessage());
             }
         }
 
-        System.out.println("[quit] Quitting");
+        out.println("[quit] Quitting");
         System.exit(0);
     };
     public void loadStoredMeals(String filename)
@@ -283,11 +367,11 @@ class CLI
         List<Meal> meals = null;
         try { meals = user.loadFromFile(filename); }
         catch (FileNotFoundException ex) {
-            System.out.println("[load] Could not find: " + filename);
-            System.out.println("[load] Don't worry, its ok");
+            out.println("[load] Could not find: " + filename);
+            out.println("[load] Don't worry, its ok");
         }
         catch (IOException ex) {
-            System.out.println("[load] Exception: " + ex.getMessage());
+            out.println("[load] Exception: " + ex.getMessage());
         }
         user.mergeMeals(meals);
     };
@@ -295,14 +379,14 @@ class CLI
     {
         if (e instanceof SecurityFailedException)
         {
-            System.out.println("[book] Failed due to security cookies, try \"signin\"");
+            out.println("[book] Failed due to security cookies, try \"signin\"");
         }
-        System.out.println("[book] Exception message: " + e.getMessage());
+        out.println("[book] Exception message: " + e.getMessage());
     }
     <T> boolean bookPrintResponseList(List<T> list, Function<T, String> getStringFunction) {
         for (int i = 0; i < list.size(); i++)
         {
-            System.out.println(String.format("%2d. %s", i, getStringFunction.apply(list.get(i))));
+            out.println(String.format("%2d. %s", i, getStringFunction.apply(list.get(i))));
         }
         return true;
     }
@@ -314,8 +398,8 @@ class CLI
 
         if (args.length != 1)
         {
-            System.out.println("[book] ERROR: incorrect number of arguments");
-            System.out.println("[book] usage: book [yyyy-mm-dd]");
+            out.println("[book] ERROR: incorrect number of arguments");
+            out.println("[book] usage: book [yyyy-mm-dd]");
             return;
         };
 
@@ -323,11 +407,11 @@ class CLI
         if (scannerCLI.checkDate(arg)) {
             date = arg;
         } else {
-            System.out.println("[book] Invalid argument:        " + arg);
-            System.out.println("[book] Expected date in format: yyyy-mm-dd");
+            out.println("[book] Invalid argument:        " + arg);
+            out.println("[book] Expected date in format: yyyy-mm-dd");
             return;
         }
-        System.out.println("[book] At any option, enter -1 to cancel");
+        out.println("[book] At any option, enter -1 to cancel");
 
         MealBookingOptions mbo = new MealBookingOptions();
         mbo.mealDate = date;
@@ -339,7 +423,7 @@ class CLI
         if (slots == null) return;
         bookPrintResponseList(slots, this::mealSlotString);
 
-        System.out.println("Select a meal slot: ");
+        out.println("Select a meal slot: ");
         choice = scannerCLI.nextIntRanged(-1, slots.size());
         if (choice == -1) return;
         mbo.mealSlot = slots.get(choice).code;
@@ -348,12 +432,12 @@ class CLI
         List<MealFacility> facilities = null;
         try { facilities = client.getAvailableMealFacilities(mbo.mealDate, mbo.mealSlot); }
         catch (InterruptedException ex)
-        { System.out.println("[book] " + ex.getMessage()); return; }
+        { out.println("[book] " + ex.getMessage()); return; }
         catch (Exception e) { bookHandleExceptions(e); };
         if (facilities == null) return;
         bookPrintResponseList(facilities, this::mealFacilityString);
 
-        System.out.println("Select a meal faciliy: ");
+        out.println("Select a meal faciliy: ");
         choice = scannerCLI.nextIntRanged(-1, facilities.size());
         if (choice == -1) return;
         mbo.mealFacility = facilities.get(choice).code;
@@ -365,7 +449,7 @@ class CLI
         if (options == null) return;
 
         bookPrintResponseList(options, this::mealOptionsString);
-        System.out.println("Select a meal option: ");
+        out.println("Select a meal option: ");
         choice = scannerCLI.nextIntRanged(-1, options.size());
         if (choice == -1) return;
 
@@ -373,14 +457,14 @@ class CLI
         mbo.mealSession = options.get(choice).sessionId;
 
         // Advance booking days
-        System.out.println("How many days to book ahead? ");
+        out.println("How many days to book ahead? ");
         mbo.advanceBookingDays = scannerCLI.nextIntRanged(-1, 31);
         scannerCLI.nextLine();
         if (mbo.advanceBookingDays == -1) return;
 
-        System.out.println();
+        out.println();
 
-        System.out.println("[book] Sending request to book meal");
+        out.println("[book] Sending request to book meal");
         List<MealBookingResponse> mbrs = null;
         try { mbrs = client.book(mbo); }
         catch (Exception e) { bookHandleExceptions(e); }
@@ -412,7 +496,7 @@ class CLI
             }
         } else
         {
-            System.out.println(user.studentNumber);
+            out.println(user.studentNumber);
         }
     }
     void cookie(String[] args)
@@ -424,11 +508,11 @@ class CLI
             updateUserMealsAsync(today);
             return;
         }
-        System.out.println(client.getCookies());
+        out.println(client.getCookies());
     }
     void help()
     {
-        System.out.println(String.join("\n",
+        out.println(String.join("\n",
                 "[help] Arguments follow the format of [optional] and <required> (do not use brackets)",
                 "[help] Commands:",
                 "    signin [student_number]",
@@ -472,6 +556,14 @@ class CLI
         return String.format("%-40s %s", m.description, m.cost);
     }
 
+    String stringFromSimpleResponse(SimpleResponse mcr)
+    {
+        String s = "";
+        s += (mcr.success) ? "success" : "fail";
+        s += (mcr.message == null) ? "" : (": " + mcr.message);
+        return s;
+    };
+
     String mealCancelResponseString(MealCancelResponse mcr)
     {
         String s = "Cancel ";
@@ -481,8 +573,8 @@ class CLI
     };
     private void handleException(Exception ex)
     {
-        System.out.println("YOOO, something went really wrong! Damn...");
-        System.out.println(ex.getMessage());
+        out.println("YOOO, something went really wrong! Damn...");
+        out.println(ex.getMessage());
         if (CLI.debugging) ex.printStackTrace();
         System.exit(1);
     }
