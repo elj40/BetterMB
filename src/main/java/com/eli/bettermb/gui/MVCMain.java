@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -39,10 +40,9 @@ record ExpectedOptionsResult(int index, String[] options) {};
 class MainView
     extends JPanel
 {
-    JPanel header;
     SidebarView sidebar;
 
-    JPanel content;
+    JPanel content = new JPanel();
     CalendarView calendar = new CalendarView();
     SettingsView settings = new SettingsView();
 
@@ -50,7 +50,6 @@ class MainView
     {
         setLayout(new BorderLayout());
 
-        content = new JPanel();
         content.setLayout(new BorderLayout());
 
         sidebar = new SidebarView();
@@ -69,9 +68,10 @@ class MainView
     }
 }
 
-record BookAsyncResult(
+record BookAsyncResult (
         List<MealBookingResponse> responses,
-        CompletableFuture<List<Meal>> futureMeals) {};
+        CompletableFuture<List<Meal>> futureMeals
+        ) {};
 
 class MainModel
 {
@@ -125,6 +125,8 @@ class MainModel
         }
     }
 
+    // TODO: the following functions are implemented in the CLI as well
+    // should look into extracting them out
     public void mergeMeals(List<Meal> newMeals)
     {
         if (newMeals == null) return;
@@ -180,11 +182,17 @@ class MainModel
         CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(date);
         var futureMealsFirstStage = futureMeals.thenApply(result -> {
             mergeMeals(result);
-            System.out.print("futureMeals.thenApply meals count: ");
             return result;
         });
         return futureMealsFirstStage;
     };
+
+    void updateMealsBookedInMonth(String date)
+        throws SecurityFailedException, IOException
+    {
+        try { mergeMeals(client.getMealsBookedInMonth(date)); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+    }
 
     void tryGetMealsBookedInMonth(String date)
     {
@@ -205,9 +213,10 @@ class MainModel
     BookAsyncResult bookAsync()
     {
         List<MealBookingResponse> responses = new ArrayList<>();
+
         try { responses= client.book(mealBookingOptions); }
         catch (Exception e) { e.printStackTrace(); };
-        //List<Meal> newMeals = client.getMealsBookedInMonth(mealBookingOptions.mealDate);
+
         CompletableFuture<List<Meal>> futureMeals = client.getMealsBookedInMonthAsync(mealBookingOptions.mealDate);
         return new BookAsyncResult(responses, futureMeals);
     };
@@ -469,17 +478,24 @@ class MainController
     BookFormView BFView = new BookFormView(LocalDate.now());
     BookFormController BFControl = new BookFormController(this, BFView);
 
-    CalendarController calControl;
+    CalendarController calendarControl;
     boolean suppressEvents;
 
 
     final String dateToday = LocalDate.now().toString();
 
+    enum BookingField {
+        SLOT,
+        FACILITY,
+        OPTION,
+        DAYS_AHEAD,
+    }
+
     MainController(MainView view, MainModel model)
     {
         this.view = view;
         this.model = model;
-        calControl = new CalendarController(this, view.calendar);
+        calendarControl = new CalendarController(this, view.calendar);
 
         setMonth(YearMonth.now());
 
@@ -500,6 +516,7 @@ class MainController
         model.loadMealsFromFile(settingsController.model.cachedMealsFilePath);
         this.refreshMonth(date);
 
+        calendarControl.setStatus("Ready", Color.green);
         //tryGetMealsBookedInMonth(date);
         var mealsFuture = model.updateMealsBookedAsync(date);
         mealsFuture.thenAccept(result -> {
@@ -524,7 +541,7 @@ class MainController
         setMonth(YearMonth.parse(date.substring(0,date.length()-3))); // TODO: this is jank
     }
 
-    // TODO: clean up, this has bad practices
+    // TODO: clean up, this has bad practices -> such as? -> oh i see them now
     void signIn(String signin_entry, String signin_target)
     {
         String cookies = null;
@@ -552,8 +569,21 @@ class MainController
     {
         settingsController.model.cookies = settingsController.view.cookiesInput.getText();
         model.client.setCookies(settingsController.model.cookies);
-        tryGetMealsBookedInMonth(date);
+
+        // tryGetMealsBookedInMonth(date);
+        try { model.updateMealsBookedInMonth(date); }
+        catch (SecurityFailedException ex) {
+            displaySignInFail();
+            return;
+        }
+        catch (IOException ex) {
+            calendarControl.setStatus("Exception: " + ex.getMessage(), Color.yellow);
+            return;
+        }
+
         model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
+
+        calendarControl.setStatus("Successfully reloaded", Color.green);
     };
 
     void tryGetMealsBookedInMonth(String date)
@@ -567,8 +597,8 @@ class MainController
     {
         // TODO: this should be per month
         List<CalendarMealView> meals = model.getAllMealViews();
-        calControl.setMonth(month);
-        calControl.setCalendarMeals(meals);
+        calendarControl.setMonth(month);
+        calendarControl.setCalendarMeals(meals);
     }
     void onGoToAbout()
     {
@@ -623,9 +653,7 @@ class MainController
 
     void displaySignInFail()
     {
-        System.out.println("displaySignInFail");
-        setAndClearActionsArea(DFView);
-        SwingUtilities.invokeLater(() -> DFView.signinButton.setBackground(Color.YELLOW));
+        calendarControl.setStatus("Sign in failure, please try again", Color.yellow);
     };
 
     void setInfoAreaWithCancelResults(MealCancelResponse mcr)
@@ -717,29 +745,56 @@ class MainController
         if (suppressEvents) return;
         model.startMealBooking();
 
+        calendarControl.setStatus("Loading slots...", Color.lightGray);
         String[] options;
         try { options = model.getAvailableMealSlots(date); }
         catch (SecurityFailedException sex) { displaySignInFail(); return; }
         catch (Exception e) { e.printStackTrace(); return; }
+        calendarControl.setStatus("Ready", Color.green);
         model.setMealBookingDate(date);
 
         LabelComboBox next = BFView.slotInput;
         prepareRestOfBookingForm(next, options);
     };
 
+    boolean bookingFieldEnteredShouldProcess(String fieldValue)
+    {
+        return !(suppressEvents || fieldValue.isEmpty());
+    }
+
+    Optional<String[]> bookingFieldEnteredHelper(BookingField field, String fieldValue)
+    {
+        String[] options;
+        calendarControl.setStatus("Loading " + field.name().toLowerCase() + " ...", Color.lightGray);
+        try {
+            options = switch (field)
+            {
+                case SLOT     -> model.getAvailableMealFacilities(fieldValue);
+                case FACILITY -> model.getAvailableMealOptions(fieldValue);
+                default -> throw new RuntimeException("TODO");
+            };
+        }
+        catch (SecurityFailedException sex) { displaySignInFail(); return Optional.empty(); }
+        catch (IllegalArgumentException e) { e.printStackTrace(); return Optional.empty(); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return Optional.empty(); }
+        catch (IOException e) { e.printStackTrace(); return Optional.empty(); }
+
+        calendarControl.setStatus("Ready", Color.green);
+
+        return Optional.of(options);
+    }
+
     void bookingSlotEntered(String slot)
     {
-        if (suppressEvents) return;
-        if (slot.isEmpty()) return;
+        if (!bookingFieldEnteredShouldProcess(slot)) return;
 
-        String[] options;
-        try
-        {
-            options = model.getAvailableMealFacilities(slot);
-            settingsController.addDefaultFacilityOptions(options);
-        }
-        catch (SecurityFailedException sex) { displaySignInFail(); return; }
+        Optional<String[]> optionsOption = bookingFieldEnteredHelper(BookingField.SLOT, slot);
+        if (optionsOption.isEmpty()) return;
+
+        String[] options = optionsOption.get();
+
         model.setMealBookingSlot(slot);
+        settingsController.addDefaultFacilityOptions(options);
 
         LabelComboBox next = BFView.faclInput;
         prepareRestOfBookingForm(next, options);
@@ -773,21 +828,15 @@ class MainController
 
     void bookingFaclEntered(String facility)
     {
-        if (suppressEvents) return;
-        if (facility.isEmpty()) return;
+        if (!bookingFieldEnteredShouldProcess(facility)) return;
 
-        String[] options;
+        Optional<String[]> optionsOption =
+            bookingFieldEnteredHelper(BookingField.FACILITY, facility);
+
+        if (optionsOption.isEmpty()) return;
+        String[] options = optionsOption.get();
+
         model.setMealBookingFacility(facility);
-        try { options = model.getAvailableMealOptions(facility); }
-        catch (SecurityFailedException sex) { displaySignInFail(); return; }
-        catch (IllegalArgumentException e) {
-            System.out.print("bookingOptnEntered: ");
-            System.out.println(facility);
-            e.printStackTrace();
-            return;
-        }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
-        catch (IOException e) { e.printStackTrace(); return; }
 
         // TODO: use model to see if it was valid
         LabelComboBox next = BFView.optnInput;
@@ -796,8 +845,7 @@ class MainController
 
     void bookingOptnEntered(String option)
     {
-        if (suppressEvents) return;
-        if (option.isEmpty()) return;
+        if (!bookingFieldEnteredShouldProcess(option)) return;
 
         try { model.setMealBookingOption(option); }
         catch (IllegalArgumentException e) {
@@ -849,7 +897,7 @@ class MainController
             model.meals.addAll(result);
             model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
             List<CalendarMealView> meals = model.getAllMealViews();
-            calControl.setCalendarMeals(meals);
+            calendarControl.setCalendarMeals(meals);
         });
     }
     void cancel(String id)
@@ -862,7 +910,7 @@ class MainController
         setInfoAreaWithCancelResults(mcr);
 
         List<CalendarMealView> meals = model.getAllMealViews();
-        calControl.setCalendarMeals(meals);
+        calendarControl.setCalendarMeals(meals);
         model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
     }
 }

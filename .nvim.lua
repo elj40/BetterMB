@@ -1,6 +1,7 @@
 -- Options
 vim.opt.autochdir = false
 vim.opt.wrap = false
+vim.g.netrw_liststyle = 3
 
 -- Insert mode mapping: print -> System.out.println
 vim.keymap.set("i", "print", "System.out.println", { noremap = true })
@@ -18,7 +19,6 @@ end, { nargs = "*" })
 
 -- Normal mode mappings
 vim.keymap.set("n", "<Leader>t", ":BSplitTerm ", { noremap = true })
-vim.keymap.set("n", "<Leader>cc", ":BSplitTerm ./gradlew classes<CR>", { noremap = true, silent = true })
 vim.keymap.set("n", "<Leader>rr", ":BSplitTerm ./gradlew :gui:run<CR>", { noremap = true, silent = true })
 vim.keymap.set("n", "<Leader>dd", ":BSplitTerm ./gradlew -Dstub=true :gui:run <CR>", { noremap = true, silent = true })
 

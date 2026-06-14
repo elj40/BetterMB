@@ -10,7 +10,8 @@ import java.net.URI;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set; import java.lang.reflect.Type;
+import java.util.Set;
+import java.lang.reflect.Type;
 
 import java.io.IOException;
 
@@ -49,9 +50,6 @@ public class Client
 {
     // NEW API, the changing API goes to show that we can't just hardcode things anymore
     // It will need to be hardcoded SOMEWHERE, but preferrably in some config at runtime
-
-    // These things dont really change throughout the lifetime of the program
-    public static boolean debugging = true;
 
     public Configuration config = Configuration.devLive;
 
@@ -127,7 +125,7 @@ public class Client
             Thread.sleep(1000);
             if (driver.getCurrentUrl().startsWith(config.target().toString()))
             {
-                if (Client.debugging) System.out.println("[getSecurityCookiesBySignIn] On target page");
+                if (config.debugging()) System.out.println("[getSecurityCookiesBySignIn] On target page");
                 break;
             };
         };
@@ -141,7 +139,7 @@ public class Client
             securityCookies = securityCookies + "=";
             securityCookies = securityCookies + cookie.getValue();
         }
-        if (Client.debugging) System.out.println("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
+        if (config.debugging()) System.out.println("[getSecurityCookiesBySignIn] Security cookies: " + securityCookies);
         driver.quit();
         return securityCookies;
     }
@@ -161,6 +159,7 @@ public class Client
     {
         HttpRequest request = requestBuilder
             .uri(requestURI) // -> assuming valid URI from this
+            .GET()           // -> as of now all calls to this function want GET, only booking wants POST
             .build();
         HttpResponse<String> response = sendHTTP(request, BodyHandlers.ofString());
         ensureGoodResponse(response);
@@ -311,7 +310,7 @@ public class Client
             try { return getMealsBookedInMonth(date); }
             catch (Exception ex)
             {
-                if (debugging) ex.printStackTrace();
+                if (config.debugging()) ex.printStackTrace();
                 asyncExceptions.add(ex);
                 return null;
             }

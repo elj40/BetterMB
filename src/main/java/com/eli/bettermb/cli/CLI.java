@@ -42,12 +42,12 @@ class CLI
     public static void main(String[] args) throws IOException,InterruptedException
     {
         boolean shouldDebug = false;
-        Client.debugging = shouldDebug;
         CLI.debugging = shouldDebug;
         User.debugging = shouldDebug;
 
         Client client = new Client(new DefaultHttpClient());
         client.config = Configuration.release;
+        client.config = client.config.withDebug(shouldDebug);
 
         CLI cli = new CLI(System.in, System.out);
         cli.setClient(client);

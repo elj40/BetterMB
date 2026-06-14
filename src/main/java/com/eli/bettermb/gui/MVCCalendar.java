@@ -109,6 +109,8 @@ class CalendarHeaderView extends JPanel {
     public JButton next = new JButton("->");
     public JButton prev = new JButton("<-");
 
+    public JLabel statusbar = new JLabel("Status");
+
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("LLLL yyyy");
     CalendarHeaderView() {
         JDebug.addDebugFeatures(this);
@@ -124,10 +126,24 @@ class CalendarHeaderView extends JPanel {
         arrows.add(prev, BorderLayout.WEST);
         arrows.add(next, BorderLayout.EAST);
         add(arrows, BorderLayout.EAST);
+
+        JDebug.addDebugFeatures(statusbar);
+        statusbar.setBackground(Color.yellow);
+        statusbar.setOpaque(true);
+        add(statusbar, BorderLayout.NORTH);
     }
     void setMonth(YearMonth month)
     {
         this.month.setText(month.format(dateFormatter));
+    }
+    void setStatus(String s, Color c)
+    {
+        setStatusString(s);
+        SwingUtilities.invokeLater(() ->  statusbar.setBackground(c));
+    }
+    void setStatusString(String s)
+    {
+        SwingUtilities.invokeLater(() -> statusbar.setText(s));
     }
     void onTodayPressed(ActionListener listener) { today.addActionListener(listener); }
     void onPrevPressed(ActionListener listener) { prev.addActionListener(listener); }
@@ -229,6 +245,15 @@ class CalendarController
                 .setSlotDisplay(meal.slot(), meal.slotMealView());
         }
     }
+
+    void setStatus(String s, Color c)
+    {
+        view.header.setStatus(s,c);
+    }
+    void setStatusString(String s)
+    {
+        view.header.setStatusString(s);
+    }
 }
 class CalendarView extends JPanel
 {
@@ -240,5 +265,6 @@ class CalendarView extends JPanel
         add(header = new CalendarHeaderView(), BorderLayout.NORTH);
 
         add(body = new CalendarBodyView(), BorderLayout.CENTER);
+
     }
 }

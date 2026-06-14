@@ -2,8 +2,7 @@ package com.eli.bettermb.gui;
 
 import com.eli.bettermb.client.Client;
 import com.eli.bettermb.client.DefaultHttpClient;
-
-import java.util.Map;
+import com.eli.bettermb.client.Configuration;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -14,17 +13,16 @@ import java.time.DayOfWeek;
 
 public class GUI
 {
-    static String sun_url = "https://web-apps.sun.ac.za";
-
     public static void main(String[] args) {
         final int frameSizeFactor = 50;
         JFrame frame = new JFrame("BetterMB-GUI");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
 
-        //Client client = new Client(new HttpClientImpl());
-        Client client = new Client(new StubBookHttpClient());
-        Client.debugging = false;
+        Client client = new Client();
+        client.config = Configuration.devLive;
+        // client.setHttpClient(new StubBookHttpClient());
+        client.setHttpClient(new DefaultHttpClient());
 
         MainView view = new MainView();
         MainModel model = new MainModel(client);

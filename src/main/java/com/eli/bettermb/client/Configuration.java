@@ -20,7 +20,7 @@ public record Configuration (
         URI cancelRequest
         )
 {
-    Configuration withDebug(boolean debug)
+    public Configuration withDebug(boolean debug)
     {
         return new Configuration(
                 debug,
