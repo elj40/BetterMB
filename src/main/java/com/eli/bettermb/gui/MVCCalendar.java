@@ -18,7 +18,15 @@ import java.time.format.TextStyle;
 
 import com.eli.bettermb.client.Meal;
 
-record SlotMealView(String label, Color color) {};
+record SlotMealView(String label, Color color)
+{
+    static SlotMealView of(SlotMealView slotMealViewToCopy)
+    {
+        return new SlotMealView(
+                slotMealViewToCopy.label(),
+                slotMealViewToCopy.color());
+    }
+};
 record CalendarMealView(LocalDate date, int slot, SlotMealView slotMealView) {};
 
 class CellController
@@ -226,11 +234,16 @@ class CalendarController
     {
         for (int i = 0; i < monthView.monthLength; i++)
         {
-            cells[i].setSlotDisplay(0, new SlotMealView("", Color.WHITE));
-            cells[i].setSlotDisplay(1, new SlotMealView("", Color.WHITE));
-            cells[i].setSlotDisplay(2, new SlotMealView("", Color.WHITE));
+            final int I = i;
+            var empty = new SlotMealView("", Color.white);
+            SwingUtilities.invokeLater(() -> {
+            cells[I].setSlotDisplay(0, SlotMealView.of(empty));
+            cells[I].setSlotDisplay(1, SlotMealView.of(empty));
+            cells[I].setSlotDisplay(2, SlotMealView.of(empty));
+            });
         }
     }
+
     void setCalendarMeals(List<CalendarMealView> meals)
     {
         clearCalendarMeals();
@@ -241,8 +254,8 @@ class CalendarController
 
             if (!mealMonth.equals(currentMonth)) continue;
             int index = mealDate.getDayOfMonth()-1;
-            cells[index]
-                .setSlotDisplay(meal.slot(), meal.slotMealView());
+            SwingUtilities.invokeLater(() -> cells[index]
+                .setSlotDisplay(meal.slot(), meal.slotMealView()));
         }
     }
 

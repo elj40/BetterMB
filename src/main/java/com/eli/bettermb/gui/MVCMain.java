@@ -22,8 +22,10 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import java.lang.IllegalArgumentException;
+import java.lang.Object;
 import java.io.IOException;
 import java.io.File;
 import java.nio.file.Files;
@@ -73,6 +75,10 @@ record BookAsyncResult (
         CompletableFuture<List<Meal>> futureMeals
         ) {};
 
+// TODO: the a lot following functions are implemented in the CLI as well
+// should look into extracting them out into a common model
+// ideally the only difference is how they render the data with API calls to-
+// and-from the controller, it think
 class MainModel
 {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -91,16 +97,11 @@ class MainModel
     private Map SlotCodeMap     = new HashMap<String, Character>();
     private Map FacilityCodeMap = new HashMap<String, Integer>();
     private Map OptionCodeMap   = new HashMap<String, Integer>();
-    // Session map should have exact, same keys. Consider merging into one map
+    // Session map should have exact same keys. Consider merging into one map
     private Map SessionCodeMap  = new HashMap<String, Integer>();
 
     final char[] SlotCodes = {'B', 'L', 'D'};
     final String[] SlotDescriptions = {"Breakfast", "Lunch", "Dinner"};
-
-    final String sun_url = "https://web-apps.sun.ac.za";
-    final String mysun_link = "https://my.sun.ac.za/tracker?linkID=239&lang=en";
-    final String sun_entry_url = mysun_link;
-    final String sun_target_url = sun_url;
 
     MainModel(Client client)
     {
@@ -125,8 +126,7 @@ class MainModel
         }
     }
 
-    // TODO: the following functions are implemented in the CLI as well
-    // should look into extracting them out
+    // O(n^2)
     public void mergeMeals(List<Meal> newMeals)
     {
         if (newMeals == null) return;
@@ -135,6 +135,17 @@ class MainModel
             mergeMeal(newMeal);
         }
     };
+
+    public void clearMealsAfterDate(LocalDate date)
+    {
+        this.meals = this.meals.stream()
+            .filter(m -> {
+                var mealLDT = LocalDateTime.parse(m.start);
+                var mealLD = mealLDT.toLocalDate();
+                return mealLD.isBefore(date); })
+            .toList();
+    }
+
     public int mergeMeal(Meal newMeal)
     {
         boolean replaced = false;
@@ -144,9 +155,13 @@ class MainModel
 
             if (oldMeal.mealSlot != newMeal.mealSlot) continue;
             if (!oldMeal.facility.equals(newMeal.facility)) continue;
+
+            // WTF is this?
+            // Looks like hacky stuff for quick fixes
             int    end      = "yyyy-mm-dd".length();
             if (oldMeal.start.length() < end) continue;
             if (newMeal.start.length() < end) continue;
+
             String oldMealDate = oldMeal.start.substring(0,end);
             String newMealDate = newMeal.start.substring(0,end);
             if (!oldMealDate.equals(newMealDate)) continue;
@@ -542,48 +557,80 @@ class MainController
     }
 
     // TODO: clean up, this has bad practices -> such as? -> oh i see them now
-    void signIn(String signin_entry, String signin_target)
+    // TODO: I imagine we are going to use SwingWorker a lot from here on,
+    // would be nice to abstract away its verbosity
+    void signIn()
     {
-        String cookies = null;
-        try { cookies = model.client.getSecurityCookiesBySignIn(); }
-        catch (Exception ex)
+        calendarControl.setStatus("Waiting for sign in via browser window that will automatically pop up...", Color.lightGray);
+        class SignInTask extends SwingWorker<String,Void>
         {
-            System.err.println("[signin] Failed to sign in: " + ex.getMessage());
-            return;
+            @Override
+            public String doInBackground() throws IOException, InterruptedException
+            { return model.client.getSecurityCookiesBySignIn(); }
+            @Override
+            public void done()
+            {
+                String cookies = null;
+                try { cookies = get(); }
+                catch (Exception ex) {
+                    System.err.println("[signin] Failed to sign in: " + ex.getMessage());
+                    return;
+                }
+
+                if (cookies == null) return;
+                // TODO: should probably be pulled out into controller function
+                settingsController.model.cookies = cookies;
+                model.client.setCookies(settingsController.model.cookies);
+
+                settingsController.view.cookiesInput.setText(settingsController.model.cookies);
+                settingsController.model.saveToFile(settingsController.model.settingsFilePath);
+
+                calendarControl.setStatus("Sign in successful", Color.green);
+
+                reload(dateToday);
+            }
         }
 
-        if (cookies != null)
-        {
-            // TODO: should probably be pulled out into controller function
-            settingsController.model.cookies = cookies;
-            model.client.setCookies(settingsController.model.cookies);
-
-            settingsController.view.cookiesInput.setText(settingsController.model.cookies);
-            settingsController.model.saveToFile(settingsController.model.settingsFilePath);
-
-            reload(dateToday);
-        }
+        (new SignInTask()).execute();
     }
 
     void reload(String date)
     {
+        calendarControl.setStatus("Reloading meals...", Color.lightGray);
         settingsController.model.cookies = settingsController.view.cookiesInput.getText();
         model.client.setCookies(settingsController.model.cookies);
 
-        // tryGetMealsBookedInMonth(date);
-        try { model.updateMealsBookedInMonth(date); }
-        catch (SecurityFailedException ex) {
-            displaySignInFail();
-            return;
-        }
-        catch (IOException ex) {
-            calendarControl.setStatus("Exception: " + ex.getMessage(), Color.yellow);
-            return;
+        class ReloadTask extends SwingWorker<Void, Void>
+        {
+            @Override
+            public Void doInBackground()
+                throws IOException
+            {
+                // TODO: it would be nice if EVERYTHING was LocalDate, that way
+                // we know that its gauranteed to be valid and any failure
+                // happens earlier
+                model.clearMealsAfterDate(LocalDate.parse(date));
+                model.updateMealsBookedInMonth(date);
+                return null;
+            }
+
+            public void done()
+            {
+                try { get();}
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                catch (ExecutionException exception) {
+                    Throwable e = exception.getCause();
+                    if (e instanceof SecurityFailedException) { displaySignInFail(); return; }
+                    calendarControl.setStatus("Exception: " + e.getMessage() + " " + e.getCause(), Color.yellow);
+                    return;
+                }
+
+                model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
+                calendarControl.setStatus("Successfully reloaded", Color.green);
+            }
         }
 
-        model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
-
-        calendarControl.setStatus("Successfully reloaded", Color.green);
+        (new ReloadTask()).execute();
     };
 
     void tryGetMealsBookedInMonth(String date)
@@ -653,7 +700,8 @@ class MainController
 
     void displaySignInFail()
     {
-        calendarControl.setStatus("Sign in failure, please try again", Color.yellow);
+        SwingUtilities.invokeLater(() ->
+                calendarControl.setStatus("Sign in failure, please try again", Color.yellow));
     };
 
     void setInfoAreaWithCancelResults(MealCancelResponse mcr)
@@ -665,10 +713,12 @@ class MainController
         ta.setEditable(false);
         ta.append(mcr.cliDisplayString());
 
-        JScrollPane scrollPane = new JScrollPane(ta);
-        responsePanel.add(scrollPane);
-        //setInfoArea(scrollPane);
+        responsePanel.add(ta);
+        JScrollPane scrollPane = new JScrollPane(responsePanel);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        setInfoArea(responsePanel);
     }
+
     void setInfoAreaWithBookingResults(List<MealBookingResponse> responses)
     {
         JPanel responsePanel = JDebug.createDebugPanel();
@@ -886,19 +936,15 @@ class MainController
     void book()
     {
         List<MealBookingResponse> results = new ArrayList<>();
-        //try { results = model.bookSync(); }
-        //catch (IOException e) { e.printStackTrace(); };
+        // TODO: for some reason the async of this function refers to reloading the meals,
+        // I must have been tired when I wrote it.
+        // We have proper async reloading in a different function, so this
+        // should just be returned to a normal sync function or its own async
+        // should be implemented properly
         BookAsyncResult bar = model.bookAsync();
 
         setInfoAreaWithBookingResults(bar.responses());
-
-        bar.futureMeals().thenAccept(result -> {
-            if (result == null) return;
-            model.meals.addAll(result);
-            model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
-            List<CalendarMealView> meals = model.getAllMealViews();
-            calendarControl.setCalendarMeals(meals);
-        });
+        reload(model.mealBookingOptions.mealDate);
     }
     void cancel(String id)
     {

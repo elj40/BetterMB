@@ -13,19 +13,23 @@ public class Meal
     public String  borderColor;
     public int     id;
 
-    static Meal fromMBO(MealBookingOptions mbo, String start, int id)
-    {
-        Meal meal = new Meal();
-        meal.id = id;
-        meal.mealSlot = mbo.mealSlot;
-        meal.facility = MealMaps.CodeFacilityMap.get(mbo.mealFacility);
-        meal.description = MealMaps.CodeDescriptionMap.get(mbo.mealOption);
-        meal.mealCost = MealMaps.CodeCostMap.get(mbo.mealOption);
-        meal.title = MealMaps.CodeTitleMap.get(mbo.mealSlot);
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(128);
+        sb.append("Meal{");
+        sb.append("id=").append(id);
+        sb.append(", canModify=").append(canModify);
+        sb.append(", title=").append(title == null ? "null" : "\"" + title + "\"");
+        sb.append(", start=").append(start == null ? "null" : "\"" + start + "\"");
+        sb.append(", description=").append(description == null ? "null" : "\"" + description + "\"");
+        sb.append(", facility=").append(facility == null ? "null" : "\"" + facility + "\"");
+        sb.append(", mealTime=").append(mealTime == null ? "null" : "\"" + mealTime + "\"");
+        sb.append(", mealCost=").append(mealCost == null ? "null" : "\"" + mealCost + "\"");
+        sb.append(", mealSlot=").append(mealSlot);
+        sb.append(", backgroundColor=").append(backgroundColor == null ? "null" : "\"" + backgroundColor + "\"");
+        sb.append(", borderColor=").append(borderColor == null ? "null" : "\"" + borderColor + "\"");
+        sb.append('}');
+        return sb.toString();
+    }
 
-        if (mbo.mealDate == null) meal.start = start;
-        else meal.start = mbo.mealDate;
-
-        return meal;
-    };
 }

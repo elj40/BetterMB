@@ -51,7 +51,7 @@ class DefaultFormController
     {
         view.onCancelButtonPressed(e -> MControl.setAndClearActionsArea(MControl.CFView));
         view.onBookButtonPressed(e -> MControl.setAndClearActionsArea(MControl.BFView));
-        view.onSignInButtonPressed(e -> MControl.signIn(MControl.model.sun_entry_url, MControl.model.sun_target_url));
+        view.onSignInButtonPressed(e -> MControl.signIn());
         view.onReloadButtonPressed(e -> MControl.reload(LocalDate.now().toString()));
     }
 }
