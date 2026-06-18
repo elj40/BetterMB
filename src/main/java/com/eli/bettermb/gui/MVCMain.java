@@ -549,7 +549,7 @@ class MainController
         mealsFuture.thenAccept(result -> {
             if (result == null)
             {
-                displaySignInFail();
+                signInFail();
                 return;
             }
             System.out.print("mealsFuture.thenAccept: ");
@@ -586,6 +586,7 @@ class MainController
                 try { cookies = get(); }
                 catch (Exception ex) {
                     System.err.println("[signin] Failed to sign in: " + ex.getMessage());
+                    signInFail();
                     return;
                 }
 
@@ -634,7 +635,7 @@ class MainController
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
                 catch (ExecutionException exception) {
                     Throwable e = exception.getCause();
-                    if (e instanceof SecurityFailedException) { displaySignInFail(); return; }
+                    if (e instanceof SecurityFailedException) { signInFail(); return; }
                     else { e.printStackTrace(); }
                     calendarControl.setStatus("Exception: " + e.getMessage() + " " + e.getCause(), Color.yellow);
                     return;
@@ -715,10 +716,10 @@ class MainController
         view.sidebar.setInfoArea(panel);
     };
 
-    void displaySignInFail()
+    void signInFail()
     {
         SwingUtilities.invokeLater(() ->
-                calendarControl.setStatus("Sign in failure, please try again", Color.yellow));
+                calendarControl.setStatus("Security check failed, please sign in", Color.yellow));
     };
 
     void setInfoAreaWithCancelResults(MealCancelResponse mcr)
@@ -815,7 +816,7 @@ class MainController
         calendarControl.setStatus("Loading slots...", Color.lightGray);
         String[] options;
         try { options = model.getAvailableMealSlots(date); }
-        catch (SecurityFailedException sex) { displaySignInFail(); return; }
+        catch (SecurityFailedException sex) { signInFail(); return; }
         catch (Exception e) { e.printStackTrace(); return; }
         calendarControl.setStatus("Ready", Color.green);
         model.setMealBookingDate(date);
@@ -841,7 +842,7 @@ class MainController
                 default -> throw new RuntimeException("TODO");
             };
         }
-        catch (SecurityFailedException sex) { displaySignInFail(); return Optional.empty(); }
+        catch (SecurityFailedException sex) { signInFail(); return Optional.empty(); }
         catch (IllegalArgumentException e) { e.printStackTrace(); return Optional.empty(); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); return Optional.empty(); }
         catch (IOException e) { e.printStackTrace(); return Optional.empty(); }
@@ -967,7 +968,7 @@ class MainController
     {
         MealCancelResponse mcr = new MealCancelResponse();
         try { mcr = model.cancel(Integer.parseInt(id)); } // Make sure it is a valid int
-        catch (SecurityFailedException sex) { displaySignInFail(); return; }
+        catch (SecurityFailedException sex) { signInFail(); return; }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
         catch (IOException e) { e.printStackTrace(); };
         setInfoAreaWithCancelResults(mcr);
