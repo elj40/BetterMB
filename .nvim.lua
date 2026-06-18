@@ -1,6 +1,7 @@
 -- Options
 vim.opt.autochdir = false
 vim.opt.wrap = false
+vim.g.makeprg = "./gradlew classes"
 vim.g.netrw_liststyle = 3
 
 -- Insert mode mapping: print -> System.out.println

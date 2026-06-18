@@ -138,12 +138,21 @@ class MainModel
 
     public void clearMealsAfterDate(LocalDate date)
     {
-        this.meals = this.meals.stream()
-            .filter(m -> {
-                var mealLDT = LocalDateTime.parse(m.start);
-                var mealLD = mealLDT.toLocalDate();
-                return mealLD.isBefore(date); })
-            .toList();
+        List<Meal> newMeals = new ArrayList<>();
+        for (int i = 0; i < this.meals.size(); i++)
+        {
+            var mealLDT = LocalDateTime.parse(this.meals.get(i).start);
+            var mealLD = mealLDT.toLocalDate();
+            if (date.isAfter(mealLD)) newMeals.add(this.meals.get(i));
+        }
+        this.meals = newMeals;
+        // List<Meal> newMeals = this.meals.stream()
+        //     .filter(m -> {
+        //         var mealLDT = LocalDateTime.parse(m.start);
+        //         var mealLD = mealLDT.toLocalDate();
+        //         return date.isAfter(mealLD); })
+        //     .toList();
+        // this.meals = newMeals;
     }
 
     public int mergeMeal(Meal newMeal)
@@ -431,6 +440,9 @@ class MainModel
         }
         return descriptions.toArray(new String[0]);
     }
+
+    // TODO: it is not the models job to decide on how the meals will look
+    // visually, this should be moved elsewhere
     List<CalendarMealView> getAllMealViews()
     {
         //Placeholder till we set up client
@@ -609,6 +621,8 @@ class MainController
                 // TODO: it would be nice if EVERYTHING was LocalDate, that way
                 // we know that its gauranteed to be valid and any failure
                 // happens earlier
+                // TODO: if we clear the meals and THEN it fails, we would have
+                // a problem in that we lost the previous meals
                 model.clearMealsAfterDate(LocalDate.parse(date));
                 model.updateMealsBookedInMonth(date);
                 return null;
@@ -621,11 +635,14 @@ class MainController
                 catch (ExecutionException exception) {
                     Throwable e = exception.getCause();
                     if (e instanceof SecurityFailedException) { displaySignInFail(); return; }
+                    else { e.printStackTrace(); }
                     calendarControl.setStatus("Exception: " + e.getMessage() + " " + e.getCause(), Color.yellow);
                     return;
                 }
 
                 model.saveMealsToFile(settingsController.model.cachedMealsFilePath);
+                List<CalendarMealView> meals = model.getAllMealViews();
+                calendarControl.setCalendarMeals(meals);
                 calendarControl.setStatus("Successfully reloaded", Color.green);
             }
         }
