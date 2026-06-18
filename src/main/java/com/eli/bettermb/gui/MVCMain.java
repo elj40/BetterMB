@@ -495,6 +495,7 @@ class MainController
     MainModel model;
 
     SettingsController settingsController = new SettingsController();
+    QuotaController quotaController = new QuotaController();
 
     DefaultFormView DFView = new DefaultFormView();
     DefaultFormController DFControl = new DefaultFormController(this, DFView);
@@ -529,6 +530,7 @@ class MainController
         this.view.sidebar.onGoToAbout(e -> onGoToAbout());
         this.view.sidebar.onGoToHome(e -> onGoToHome());
         this.view.sidebar.onGoToSettings(e -> onGoToSettings());
+        this.view.sidebar.onGoToQuota(e -> onGoToQuota());
 
         this.view.sidebar.setActionsArea(DFView);
     }
@@ -561,6 +563,7 @@ class MainController
             SwingUtilities.invokeLater(() -> this.refreshMonth(date));
         });
 
+        onGoToQuota();
     }
 
     void refreshMonth(String date)
@@ -694,6 +697,11 @@ class MainController
     void onGoToSettings()
     {
         view.setContent(settingsController.view);
+    }
+    void onGoToQuota()
+    {
+        System.out.println("Going to quota");
+        view.setContent(quotaController.view);
     }
     void onGoToHome()
     {

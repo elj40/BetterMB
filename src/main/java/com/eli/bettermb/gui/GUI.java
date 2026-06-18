@@ -21,8 +21,8 @@ public class GUI
 
         Client client = new Client();
         client.config = Configuration.devLive;
-        // client.setHttpClient(new StubBookHttpClient());
-        client.setHttpClient(new DefaultHttpClient());
+        client.setHttpClient(new StubBookHttpClient());
+        // client.setHttpClient(new DefaultHttpClient());
 
         MainView view = new MainView();
         MainModel model = new MainModel(client);

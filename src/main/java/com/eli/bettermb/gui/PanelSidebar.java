@@ -14,6 +14,7 @@ class SidebarView extends JPanel
     JButton aboutButton = new JButton("ABOUT");
     JButton homeButton  = new JButton("HOME");
     JButton settingsButton  = new JButton("SETTINGS");
+    JButton quotaButton     = new JButton("QUOTA");
     SidebarView() {
 
         setLayout(new BorderLayout());
@@ -24,6 +25,7 @@ class SidebarView extends JPanel
             pages.add(homeButton);
             pages.add(aboutButton);
             pages.add(settingsButton);
+            pages.add(quotaButton);
         }
         add(pages, BorderLayout.NORTH);
 
@@ -55,5 +57,9 @@ class SidebarView extends JPanel
     void onGoToSettings(ActionListener listener)
     {
         settingsButton.addActionListener(listener);
+    }
+    void onGoToQuota(ActionListener listener)
+    {
+        quotaButton.addActionListener(listener);
     }
 }
