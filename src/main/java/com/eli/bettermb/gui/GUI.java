@@ -20,7 +20,7 @@ public class GUI
         frame.setSize(16*frameSizeFactor, 9*frameSizeFactor);
 
         Client client = new Client();
-        client.config = Configuration.devLive;
+        client.config = Configuration.release;
         // client.setHttpClient(new StubBookHttpClient());
         client.setHttpClient(new DefaultHttpClient());
 
