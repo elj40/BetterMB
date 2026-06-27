@@ -23,9 +23,9 @@ class SidebarView extends JPanel
         {
             pages.setLayout(new GridLayout(0, 1));
             pages.add(homeButton);
+            pages.add(quotaButton);
             pages.add(aboutButton);
             pages.add(settingsButton);
-            pages.add(quotaButton);
         }
         add(pages, BorderLayout.NORTH);
 
