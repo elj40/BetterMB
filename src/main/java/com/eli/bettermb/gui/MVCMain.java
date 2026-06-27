@@ -495,7 +495,7 @@ class MainController
     MainModel model;
 
     SettingsController settingsController = new SettingsController();
-    QuotaController quotaController = new QuotaController();
+    QuotaController quotaController;
 
     DefaultFormView DFView = new DefaultFormView();
     DefaultFormController DFControl = new DefaultFormController(this, DFView);
@@ -524,6 +524,7 @@ class MainController
         this.view = view;
         this.model = model;
         calendarControl = new CalendarController(this, view.calendar);
+        quotaController = new QuotaController(this);
 
         setMonth(YearMonth.now());
 
@@ -698,10 +699,137 @@ class MainController
     {
         view.setContent(settingsController.view);
     }
+    // ======================================================================
+    // QUOTA STUFF
+    // ======================================================================
     void onGoToQuota()
     {
         System.out.println("Going to quota");
+        refreshQuotaSummary();
         view.setContent(quotaController.view);
+    }
+
+    void refreshQuotaSummary()
+    {
+        quotaController.view.statusbar.setStatus("Fetching balance information", Color.lightGray);
+        class QuotaSummaryTask extends SwingWorker<QuotaSummary, Void>
+        {
+            @Override
+            public QuotaSummary doInBackground()
+                throws IOException, InterruptedException
+                { return model.client.getQuotaSummary(); }
+            @Override
+            public void done()
+            {
+                QuotaSummary qs = null;
+                try { qs = get(); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                catch (ExecutionException exception) {
+                    Throwable e = exception.getCause();
+                    if (e instanceof SecurityFailedException)
+                    {
+                        //TODO: make signInFail more generic
+                        SwingUtilities.invokeLater(() ->
+                                quotaController.view.statusbar.setStatus(
+                                    "Security check failed, please sign in", Color.yellow));
+                        return;
+                    }
+                    else { e.printStackTrace(); }
+                    quotaController.view.statusbar.setStatus("Exception: " + e.getMessage() + " " + e.getCause(), Color.yellow);
+                    return;
+                }
+                if (qs != null) quotaController.setQuotaSummary(qs);
+                quotaController.view.statusbar.setStatus("Balance information fetched successfully", Color.green);
+            }
+        }
+
+        (new QuotaSummaryTask()).execute();
+    }
+
+    void balanceChangeHelper(float rands, String changeString, String accountString)
+    {
+        quotaController.view.statusbar.setStatus(
+                "Requesting an " + changeString + " in " + accountString,
+                Color.lightGray);
+
+        String accountStringCapitilized;
+        if ("quota".equals(accountString))
+            accountStringCapitilized = accountString.substring(0, 1).toUpperCase() + accountString.substring(1);
+        else if ("cob".equals(accountString))
+            accountStringCapitilized = accountString.toUpperCase();
+        else
+            throw new IllegalArgumentException("UNREACHABLE: expected accountString to be \"quota\" or \"cob\"");
+
+        int amountInCents = Math.round(rands * 100);
+        // balanceChangeHelper();
+        class BalanceChangeTask extends SwingWorker<SimpleResponse, Void>
+        {
+            @Override
+            public SimpleResponse doInBackground()
+                throws IOException, InterruptedException, SecurityFailedException
+                {
+                    String actionString = changeString + " " + accountString;
+                    if ("increase quota".equals(actionString))      return model.client.quotaIncrease(amountInCents);
+                    else if ("decrease quota".equals(actionString)) return model.client.quotaDecrease(amountInCents);
+                    else if ("increase cob".equals(actionString))   return model.client.cobIncrease  (amountInCents);
+                    else if ("decrease cob".equals(actionString))   return model.client.cobDecrease  (amountInCents);
+                    // TODO: this might be shown to the user even though it is only meant for the developer
+                    else throw new IllegalArgumentException("UNREACHABLE: changeString and accountString does not match any cases");
+                };
+            @Override
+            public void done()
+            {
+                try {
+                    SimpleResponse response = get();
+                    if (response.success)
+                    {
+                        quotaController.view.statusbar.setStatus(
+                            accountStringCapitilized + " " + changeString + " success. Wait a few moments and refresh to see new balance",
+                            Color.green);
+                    } else
+                    {
+                        quotaController.view.statusbar.setStatus(
+                            accountStringCapitilized + " " + changeString + " failed: " + response.message,
+                            Color.yellow);
+                    }
+                }
+                // TODO: these catch statements are used everywhere, need to pull them out
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                catch (ExecutionException exception) {
+                    Throwable e = exception.getCause();
+                    if (e instanceof SecurityFailedException)
+                    {
+                        //TODO: make signInFail more generic so it works across quota and calendar
+                        SwingUtilities.invokeLater(() ->
+                                quotaController.view.statusbar.setStatus(
+                                    "Security check failed, please sign in", Color.yellow));
+                        return;
+                    }
+                    else { e.printStackTrace(); }
+                    quotaController.view.statusbar.setStatus("Exception: " + e.getMessage() + " " + e.getCause(), Color.yellow);
+                    return;
+                }
+
+            }
+        }
+
+        (new BalanceChangeTask()).execute();
+    }
+    void increaseQuota(float rands)
+    {
+        balanceChangeHelper(rands, "increase", "quota");
+    }
+    void decreaseQuota(float rands)
+    {
+        balanceChangeHelper(rands, "decrease", "quota");
+    }
+    void increaseCOB  (float rands)
+    {
+        balanceChangeHelper(rands, "increase", "cob");
+    }
+    void decreaseCOB  (float rands)
+    {
+        balanceChangeHelper(rands, "decrease", "cob");
     }
     void onGoToHome()
     {

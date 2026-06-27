@@ -255,7 +255,7 @@ class StubBookHttpClient implements HttpClientInterface
             responseString += " ]";
             this.setResponseFromString(200, responseString);
         }
-        else if (uri.contains("booking/"))
+        else if (uri.contains("store-meal-booking/")) // TODO: this matches all of them including quota
         {
             String responseString = "[ ";
             for (int i = 0; i <= 8; i++)
@@ -269,6 +269,37 @@ class StubBookHttpClient implements HttpClientInterface
             };
             responseString += " ]";
             this.setResponseFromString(200, responseString);
+        }
+        else if (uri.contains("get-quota-summary/"))
+        {
+            // TODO: Quota can be pending or not, but our current architecture
+            // does not allow automatic testing, so it is difficult to test all
+            // the scenarios. Will need a HUGE refactor to get there
+            String responseString = "{" +
+                "\"quotaPendingMessage\": \"Still working out new quota\"," +
+                "\"currentQuotaDesc\": \"R21000.00\"," +
+                "\"cobQuotaDesc\": \"R120\"," +
+                "\"balanceDesc\": \"R1730.86\"," +
+                "\"mealUsageDesc\": null," +
+                "\"quotaIncreaseDTO\": []," +
+                "\"quotaDecreaseDTO\": []," +
+                "\"cobIncreaseDTO\": []," +
+                "\"cobDecreaseDTO\": []" +
+                "}";
+            this.setResponseFromString(200, responseString);
+        }
+        else if (uri.contains("increase-quota/") |
+                 uri.contains("decrease-quota/") |
+                 uri.contains("increase-cob/")   |
+                 uri.contains("decrease-cob/"))
+        {
+            this.setResponseFromString(200, """
+                    { success: true, message: null }
+                    """);
+        } else
+        {
+            String responseString = "Unknown URL";
+            this.setResponseFromString(404, responseString);
         }
 
         return response;

@@ -161,10 +161,25 @@ class LabelNumberSpinner extends LabelInput
 {
     JSpinner numberField;
 
+    // TODO: these are very similar, should repeat less
     LabelNumberSpinner(String label_str, String button_label)
     {
         super(label_str, button_label);
-        var spinnerModel = new SpinnerNumberModel(0, 0, 31, 1);
+        var spinnerModel = new SpinnerNumberModel();
+        numberField = new JSpinner(spinnerModel);
+        add(numberField, BorderLayout.CENTER);
+    }
+    LabelNumberSpinner(String label_str, String button_label, int min, int max, int stepsize)
+    {
+        super(label_str, button_label);
+        var spinnerModel = new SpinnerNumberModel(0, min, max, stepsize);
+        numberField = new JSpinner(spinnerModel);
+        add(numberField, BorderLayout.CENTER);
+    }
+    LabelNumberSpinner(String label_str, String button_label, double min, double max, double stepsize)
+    {
+        super(label_str, button_label);
+        var spinnerModel = new SpinnerNumberModel(0, min, max, stepsize);
         numberField = new JSpinner(spinnerModel);
         add(numberField, BorderLayout.CENTER);
     }
@@ -175,6 +190,10 @@ class LabelNumberSpinner extends LabelInput
     int getValue()
     {
         return (int) numberField.getValue();
+    }
+    float getValueAsFloat()
+    {
+        return (float) ((double) numberField.getValue());
     }
     void setValue(int v)
     {

@@ -1,37 +1,83 @@
 package com.eli.bettermb.gui;
 
+import com.eli.bettermb.client.QuotaSummary;
+
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 
+class SwingExtensions
+{
+    static void setMaximumSize(JComponent component, int width, int height)
+    {
+        Dimension size = new Dimension(width,height);
+        component.setMaximumSize(size);
+    }
+    static void setMaximumHeightScaledByFont(JComponent component, float scale)
+    {
+        SwingExtensions.setMaximumSize(
+                component,
+                component.getMaximumSize().width,
+                (int)(component.getFont().getSize()*scale));
+    }
+}
+
 class QuotaView extends JPanel
 {
-    JLabel title = new JLabel("Quota");
-    JTextField quotaIncreaseInput = new JTextField();
-    JTextField quotaDecreaseInput = new JTextField();
-    JTextField cobIncreaseInput = new JTextField();
-    JTextField cobDecreaseInput = new JTextField();
+    // Header
+    StatusBar statusbar = new StatusBar("Status Uninitialised");
+    JLabel title = new JLabel("Manage Quota/COB");
+    JButton refreshButton = new JButton("Refresh");
 
-    JLabel quotaIncreaseLabel = new JLabel("Increase Quota");
-    JLabel quotaDecreaseLabel = new JLabel("Decrease Quota");
-    JLabel cobIncreaseLabel   = new JLabel("Increase COB"  );
-    JLabel cobDecreaseLabel   = new JLabel("Decrease COB"  );
+    JLabel QuotaLabel   = new JLabel("R--.--");
+    JLabel COBLabel     = new JLabel("R--.--");
+    JLabel BalanceLabel = new JLabel("R--.--");
 
-    final JTextField[] textfields = {
-        quotaIncreaseInput,
-        quotaDecreaseInput,
-        cobIncreaseInput,
-        cobDecreaseInput
-    };
+    BalanceRequestInput QuotaIncreaseInput = new BalanceRequestInput("Increase Quota");
+    BalanceRequestInput QuotaDecreaseInput = new BalanceRequestInput("Decrease Quota");
+    BalanceRequestInput COBIncreaseInput   = new BalanceRequestInput("Increase COB");
+    BalanceRequestInput COBDecreaseInput   = new BalanceRequestInput("Decrease COB");
 
-    final JLabel[] labels = {
-        quotaIncreaseLabel,
-        quotaDecreaseLabel,
-        cobIncreaseLabel,
-        cobDecreaseLabel
-    };
+    class InformationRow extends JPanel
+    {
+        InformationRow(String description, JLabel value)
+        {
+            setLayout(new GridLayout(1, 2));
+            var descriptionLabel = new JLabel(description);
+
+            InformationRow.styleLabel(descriptionLabel);
+            InformationRow.styleLabel(value);
+            SwingExtensions.setMaximumHeightScaledByFont(this, 3);
+
+            add(descriptionLabel);
+            add(value);
+        }
+
+        public static void styleLabel(JLabel label) {
+            if (label == null) return;
+
+            label.setOpaque(true);
+            label.setBackground(Color.WHITE);
+
+            Border topBottomBorder = BorderFactory.createMatteBorder(
+                    1, 1, 1, 1, Color.LIGHT_GRAY
+                    );
+
+            label.setBorder(topBottomBorder);
+        }
+    }
+
+    class BalanceRequestInput extends LabelNumberSpinner
+    {
+        BalanceRequestInput(String description)
+        {
+            super(description, "Request", 0, Double.MAX_VALUE, 0.01);
+            SwingExtensions.setMaximumSize(this, Integer.MAX_VALUE, 50);
+        }
+    }
 
     QuotaView()
     {
@@ -41,129 +87,78 @@ class QuotaView extends JPanel
         setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
         // Top heading
+        JPanel heading = new JPanel(new BorderLayout());
         JLabel title = new JLabel("Manage Quota/COB");
-        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
-
-        add(title);
-
-        // Table data
-        String[] columns = {"", ""};
-
-        String[][] data = {
-                {"Your current quota", "R16800.00"},
-                {"Your current COB quota", "R187.01"},
-                {"Your available balance", "R3440.67"}
-        };
 
 
-        JTable table = new JTable(data, columns);
+        // TODO: I dont like hardcoding UI sizes like this
+        var headingPreferredSize = new Dimension(Integer.MAX_VALUE, 50);
+        heading.setMaximumSize(headingPreferredSize);
+        heading.add(statusbar, BorderLayout.NORTH);
+        heading.add(title, BorderLayout.CENTER);
+        heading.add(refreshButton, BorderLayout.EAST);
+        add(heading);
 
-        table.setRowHeight(36);
-        table.setShowGrid(true);
-        table.setGridColor(new Color(220, 220, 220));
+        add(new InformationRow("Your current quota", QuotaLabel));
+        add(new InformationRow("Your current COB quota", COBLabel));
+        add(new InformationRow("Your available balance", BalanceLabel));
+        add(Box.createVerticalStrut(20));
 
-        // Remove column headers
-        table.setTableHeader(null);
+        add(QuotaIncreaseInput);
+        add(QuotaDecreaseInput);
+        add(COBIncreaseInput);
+        add(COBDecreaseInput);
 
-        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
-        leftRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-
-
-        table.getColumnModel().getColumn(0)
-                .setCellRenderer(leftRenderer);
-
-        table.getColumnModel().getColumn(1)
-                .setCellRenderer(rightRenderer);
-
-        add(table);
-
-
-        String[] options = {
-                "Increase Quota" ,
-                "Decrease Quota",
-                "Increase COB",
-                "Decrease COB"
-        };
-
-        JPanel content = new JPanel();
-        GroupLayout layout = new GroupLayout(content);
-        content.setLayout(layout);
-
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
-
-        final int textFieldColumns = 32;
-        for (JTextField input: textfields) input.setColumns(textFieldColumns);
-
-        var horizontalGroup = layout.createSequentialGroup();
-
-        var horizontalParallelGroup1 = layout.createParallelGroup();
-        for (JLabel label: labels) horizontalParallelGroup1.addComponent(label);
-        horizontalGroup.addGroup(horizontalParallelGroup1);
-
-        var horizontalParallelGroup2 = layout.createParallelGroup();
-        for (JTextField input: textfields) horizontalParallelGroup2.addComponent(input);
-        horizontalGroup.addGroup(horizontalParallelGroup2);
-
-        layout.setHorizontalGroup(horizontalGroup);
-
-        var verticalGroup = layout.createSequentialGroup();
-        for (int i = 0; i < textfields.length; i++)
-        {
-            verticalGroup.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(labels[i])
-                    .addComponent(textfields[i]));
-        }
-        layout.setVerticalGroup(verticalGroup);
-
-
-        // GridBagConstraints gbc = new GridBagConstraints();
-        // // gbc.insets = new Insets(8, 8, 8, 8);
-        // gbc.fill = GridBagConstraints.HORIZONTAL;
-        //
-        // for (int i = 0; i < options.length; i++)
-        // {
-        //     // JLabel label = new JLabel(options[i]);
-        //     // JTextField input = new JTextField();
-        //     //
-        //     // label.setHorizontalAlignment(SwingConstants.RIGHT);
-        //     //
-        //     // gbc.gridx = 0;
-        //     // gbc.gridy = i;
-        //     // gbc.weightx = 0.5;
-        //     // panel.add(label, gbc);
-        //     //
-        //     // gbc.gridx = 1;
-        //     // gbc.weightx = 0.5;
-        //     // panel.add(input, gbc);
-        //     JPanel input = createInputField(new JLabel(options[i]), new JTextField());
-        //     add(input);
-        // }
-        //
-        add(content);
+        statusbar.setStatus("Status Uninitialized", Color.lightGray);
     }
 
-    JPanel createInputField(JComponent desc, JComponent field)
+    void onRefreshPressed(ActionListener listener) { refreshButton.addActionListener(listener); }
+    void onIncreaseQuotaPressed(ActionListener listener) { QuotaIncreaseInput.addActionListener(listener); }
+    void onDecreaseQuotaPressed(ActionListener listener) { QuotaDecreaseInput.addActionListener(listener); }
+    void onIncreaseCOBPressed  (ActionListener listener) { COBIncreaseInput  .addActionListener(listener); }
+    void onDecreaseCOBPressed  (ActionListener listener) { COBDecreaseInput  .addActionListener(listener); }
+
+    void setQuotaSummary(QuotaSummary qs)
     {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(desc, BorderLayout.WEST);
-        panel.add(field, BorderLayout.CENTER);
-
-        Dimension maxSize = new Dimension(Integer.MAX_VALUE, panel.getPreferredSize().height);
-        panel.setMaximumSize(maxSize);
-
-        return panel;
+        SwingUtilities.invokeLater(() -> {
+            if (qs.quotaPendingMessage != null)
+                statusbar.setStatus("Balance not up-to-date: " + qs.quotaPendingMessage, Color.yellow);
+            QuotaLabel.setText(qs.currentQuotaDesc);
+            COBLabel.setText(qs.cobQuotaDesc);
+            BalanceLabel.setText(qs.balanceDesc);
+        });
     }
+
 }
 
-class QuotaModel
-{
-}
-
+// TODO: I dont like this pattern
+// using it Calendar as well
+// TODO: COB and Quota seperation becoming cumbersome
 class QuotaController
 {
     QuotaView view = new QuotaView();
+    QuotaController(MainController MControl)
+    {
+        view.onRefreshPressed(e -> {
+            view.statusbar.setStatus("Refreshing Quota Summary...", Color.lightGray);
+            MControl.refreshQuotaSummary();
+        });
+        view.onIncreaseQuotaPressed(e -> MControl.increaseQuota(increaseQuotaValue()));
+        view.onDecreaseQuotaPressed(e -> MControl.decreaseQuota(decreaseQuotaValue()));
+        view.onIncreaseCOBPressed  (e -> MControl.increaseCOB  (increaseCOBValue  ()));
+        view.onDecreaseCOBPressed  (e -> MControl.decreaseCOB  (decreaseCOBValue  ()));
+    }
+
+    void setQuotaSummary(QuotaSummary qs)
+    {
+        view.setQuotaSummary(qs);
+    }
+
+    float balanceValueHelper(LabelNumberSpinner input)
+    { return input.getValueAsFloat(); };
+    // TODO: again, cumbersome
+    float increaseQuotaValue() { return balanceValueHelper(view.QuotaIncreaseInput); }
+    float decreaseQuotaValue() { return balanceValueHelper(view.QuotaDecreaseInput); }
+    float increaseCOBValue  () { return balanceValueHelper(view.COBIncreaseInput  ); }
+    float decreaseCOBValue  () { return balanceValueHelper(view.COBDecreaseInput  ); }
 }

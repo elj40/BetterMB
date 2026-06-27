@@ -111,13 +111,34 @@ class CalendarMonthView extends JPanel {
         revalidate();
     }
 }
+
+ class StatusBar extends JLabel
+{
+    // NOTE: JLabel as field instead of parent?
+    StatusBar(String text)
+    {
+        super(text);
+        JDebug.addDebugFeatures(this);
+        setOpaque(true);
+    };
+    void setStatus(String s, Color c)
+    {
+        setStatusString(s);
+        SwingUtilities.invokeLater(() ->  setBackground(c));
+    }
+    void setStatusString(String s)
+    {
+        SwingUtilities.invokeLater(() -> setText(s));
+    }
+}
+
 class CalendarHeaderView extends JPanel {
     public JButton today = new JButton("today");
     public JLabel month = new JLabel();
     public JButton next = new JButton("->");
     public JButton prev = new JButton("<-");
 
-    public JLabel statusbar = new JLabel("Status");
+    StatusBar statusbar = new StatusBar("Status");
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("LLLL yyyy");
     CalendarHeaderView() {
@@ -135,9 +156,7 @@ class CalendarHeaderView extends JPanel {
         arrows.add(next, BorderLayout.EAST);
         add(arrows, BorderLayout.EAST);
 
-        JDebug.addDebugFeatures(statusbar);
-        statusbar.setBackground(Color.yellow);
-        statusbar.setOpaque(true);
+        setStatus("Status Uninitilised", Color.lightGray);
         add(statusbar, BorderLayout.NORTH);
     }
     void setMonth(YearMonth month)
@@ -146,12 +165,11 @@ class CalendarHeaderView extends JPanel {
     }
     void setStatus(String s, Color c)
     {
-        setStatusString(s);
-        SwingUtilities.invokeLater(() ->  statusbar.setBackground(c));
+        statusbar.setStatus(s,c);
     }
     void setStatusString(String s)
     {
-        SwingUtilities.invokeLater(() -> statusbar.setText(s));
+        statusbar.setStatusString(s);
     }
     void onTodayPressed(ActionListener listener) { today.addActionListener(listener); }
     void onPrevPressed(ActionListener listener) { prev.addActionListener(listener); }

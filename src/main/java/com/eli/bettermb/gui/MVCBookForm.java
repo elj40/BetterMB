@@ -18,7 +18,7 @@ class BookFormView
     LabelComboBox slotInput = new LabelComboBox("[Book] Select slot: ", ">");
     LabelComboBox faclInput = new LabelComboBox("[Book] Select facility: ", ">");
     LabelComboBox optnInput = new LabelComboBox("[Book] Select option: ", ">");
-    LabelNumberSpinner daysInput = new LabelNumberSpinner("[Book] Enter days: ", ">");
+    LabelNumberSpinner daysInput = new LabelNumberSpinner("[Book] Enter days: ", ">", 0, 31, 1);
 
     LabelInput[] inputs = {
             dateInput,
