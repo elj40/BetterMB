@@ -27,7 +27,7 @@ class ClientMealFacilitiesTest
         client = new Client();
         stub = new CustomStubHttpClient();
         client.setCookies(Common.securityCookies);
-        Client.debugging = true;
+        client.config = Configuration.test;
 
         stub.setResponseFromString(200, "[ " +
         "{\"code\":\"0\",\"description\":\"Select\"}, "           +

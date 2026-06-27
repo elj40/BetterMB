@@ -47,12 +47,12 @@ class QuotaTest
     {
         String responseString = """
         { success: true, message: null }
-        """
+        """;
         stub.setResponseFromString(200, responseString);
         cli.client.ihttpClient = stub;
 
         String[] args = {"quota","+100"};
-        assertDoesNotThrow(() -> { simple = cli.account(args); });
+        assertDoesNotThrow(() -> { cli.account(args); });
 
         System.out.println("Output captured: |" + out.toString() + "|");
         assertNotEquals(out.size(), 0);

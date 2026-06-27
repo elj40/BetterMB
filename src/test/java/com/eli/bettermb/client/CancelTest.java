@@ -33,7 +33,7 @@ class ClientCancelTest
         stub = new CustomStubHttpClient();
         mcr = null;
         client.setCookies(Common.securityCookies);
-        Client.debugging = false;
+        client.config = Configuration.test;
         stub.shouldThrowException = false;
     };
     @Test

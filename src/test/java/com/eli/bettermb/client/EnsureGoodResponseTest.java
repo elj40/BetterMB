@@ -20,7 +20,7 @@ class ClientEnsureGoodResponseTest
     {
         client = new Client();
         stub = new CustomStubHttpClient();
-        Client.debugging = false;
+        client.config = Configuration.test;
         client.setHttpClient(stub);
     };
     //@Test

@@ -30,8 +30,7 @@ class ClientBookTest
         client = new Client();
         stub = new CustomStubHttpClient();
         mbo = new MealBookingOptions();
-        client.setCookies(Common.securityCookies);
-        Client.debugging = false;
+        client.config = Configuration.test;
         stub.shouldThrowException = false;
 
         mbo.mealDate = date;

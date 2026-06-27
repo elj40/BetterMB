@@ -28,7 +28,7 @@ class QuotaTest
         client = new Client();
         stub = new CustomStubHttpClient();
         quota = new QuotaSummary();
-        Client.debugging = true;
+        client.config = Configuration.test;
         stub.shouldThrowException = false;
     };
     @Test
