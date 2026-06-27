@@ -51,7 +51,7 @@ public class Client
     // NEW API, the changing API goes to show that we can't just hardcode things anymore
     // It will need to be hardcoded SOMEWHERE, but preferrably in some config at runtime
 
-    public Configuration config = Configuration.devLive;
+    public Configuration config = Configuration.release;
 
     public HttpClientInterface ihttpClient;
     String securityCookies = "default=cookie";
