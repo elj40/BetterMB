@@ -36,6 +36,21 @@ class QuotaView extends JPanel
     JLabel COBLabel     = new JLabel("R--.--");
     JLabel BalanceLabel = new JLabel("R--.--");
 
+    JTextArea warningLabel = new JTextArea("""
+            WARNING:
+            The following inputs are not safe to use yet.
+            The CLI version is capable of them and has been tested to work with arbitrary values.
+            During testing of the following, the university basically blocked me from increasing, decreasing or using COB.
+            It is still not understood why it happened as it operates the same as the CLI, it may just be because of excessive testing.
+
+            It probably works fine for users.
+            I had to email the universtiy to clear it up.
+
+            I apologize for the inconvenience.
+            Use at your own risk.
+            """);
+
+
     BalanceRequestInput QuotaIncreaseInput = new BalanceRequestInput("Increase Quota");
     BalanceRequestInput QuotaDecreaseInput = new BalanceRequestInput("Decrease Quota");
     BalanceRequestInput COBIncreaseInput   = new BalanceRequestInput("Increase COB");
@@ -90,7 +105,6 @@ class QuotaView extends JPanel
         JPanel heading = new JPanel(new BorderLayout());
         JLabel title = new JLabel("Manage Quota/COB");
 
-
         // TODO: I dont like hardcoding UI sizes like this
         var headingPreferredSize = new Dimension(Integer.MAX_VALUE, 50);
         heading.setMaximumSize(headingPreferredSize);
@@ -103,6 +117,12 @@ class QuotaView extends JPanel
         add(new InformationRow("Your current COB quota", COBLabel));
         add(new InformationRow("Your available balance", BalanceLabel));
         add(Box.createVerticalStrut(20));
+
+        warningLabel.setBackground(Color.yellow);
+        JDebug.addDebugFeatures(warningLabel);
+        warningLabel.setEditable(false);
+        SwingExtensions.setMaximumHeightScaledByFont(warningLabel, 14);
+        add(warningLabel);
 
         add(QuotaIncreaseInput);
         add(QuotaDecreaseInput);
