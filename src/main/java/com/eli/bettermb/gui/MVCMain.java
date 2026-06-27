@@ -563,8 +563,6 @@ class MainController
             // consider a SwingWorker here somehow
             SwingUtilities.invokeLater(() -> this.refreshMonth(date));
         });
-
-        onGoToQuota();
     }
 
     void refreshMonth(String date)
